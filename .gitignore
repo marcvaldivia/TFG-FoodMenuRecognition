@@ -112,4 +112,5 @@ FoodMenuRecognition/.idea/
 YelpSpiders/YelpSpiders.iml
 FoodMenuRecognition/FoodMenuRecognition.iml
 *.h5
-*.txt
+dataset/**
+*.pkl
