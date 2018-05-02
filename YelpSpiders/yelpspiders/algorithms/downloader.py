@@ -1,7 +1,8 @@
-import os
 import json
-import urllib
 import logging
+import os
+import urllib
+
 import requests
 
 from yelpspiders.variables.paths import Path
@@ -17,7 +18,7 @@ class Downloader:
     def execute(self):
         # DataSet folders of the different restaurants
         folders = [o for o in os.listdir(self.root_folder)
-                   if os.path.isdir("%s/%s" % (self.root_folder, o))]
+                   if os.path.isdir("%s/%s" % (self.root_folder, o)) and o != "data"]
         for f in folders:
             # Load JSON file with the restaurant information
             f = "%s/%s" % (self.root_folder, f)
@@ -65,27 +66,26 @@ class Downloader:
                     with open("%s.json" % path_to_write, "w") as json_file:
                         json_file.write(r.text)
 
-    def removeEmptyFolders(self, path, removeRoot=True):
+    def remove_empty_folders(self, path, remove_root=True):
         if not os.path.isdir(path):
             return
-
-        # remove empty subfolders
+        # remove empty sub-folders
         files = os.listdir(path)
         if len(files):
             for f in files:
-                fullpath = os.path.join(path, f)
-                if os.path.isdir(fullpath):
-                    self.removeEmptyFolders(fullpath)
+                full_path = os.path.join(path, f)
+                if os.path.isdir(full_path):
+                    self.remove_empty_folders(full_path)
 
         # if folder empty, delete it
         files = os.listdir(path)
-        if len(files) == 0 and removeRoot:
+        if len(files) == 0 and remove_root:
             print "Removing empty folder:", path
             os.rmdir(path)
 
 
 if __name__ == '__main__':
     s = Downloader(Path.DATA_FOLDER)
-    s.removeEmptyFolders(Path.DATA_FOLDER)
+    s.remove_empty_folders(Path.DATA_FOLDER)
     s.execute()
-    s.removeEmptyFolders(Path.DATA_FOLDER)
+    s.remove_empty_folders(Path.DATA_FOLDER)

@@ -2,7 +2,7 @@
 
 class Path(object):
 
-    DATA_FOLDER = "/Users/yoda/git/TFG-FoodMenuRecognition/dataset"
+    DATA_FOLDER = "/Volumes/UB/9. TFG/dataset"
 
 
 class Links(object):

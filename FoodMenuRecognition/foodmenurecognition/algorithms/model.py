@@ -57,9 +57,10 @@ def train_model(params):
     logger.debug('Starting training!')
     training_params = {
         'normalize': False,
-        'n_epochs': 10,
+        'n_epochs': 1,
         'batch_size': 64,
-        'n_parallel_loaders': 1
+        'n_parallel_loaders': 1,
+        'metric_check': 'accuracy'
     }
 
     food_model.trainNet(dataset, training_params)
@@ -69,37 +70,12 @@ def train_model(params):
     logging.info('In total is {0:.2f}s = {1:.2f}m'.format(time_difference, time_difference / 60.0))
 
 
-def apply_food_model(params):
-    # Load data
-    dataset = build_dataset(params)
-    params['INPUT_VOCABULARY_SIZE'] = dataset.vocabulary_len[params['INPUTS_IDS_DATASET'][1]]
-
-    # Load model
-    food_model = loadModel(params['STORE_PATH'], 1)
-    food_model.setOptimizer()
-
-    for s in params["EVAL_ON_SETS2"]:
-        # Apply model predictions
-        params_prediction = {
-            'predict_on_sets': [s],
-            'normalize': False,
-            'n_parallel_loaders': 1
-        }
-
-        predictions = food_model.predictNet(dataset, params_prediction)[s]
-
-        with open("test_sampling.pred", "w") as pred:
-            for p in predictions:
-                pred.write("%s\n" % np.array2string(p))
-
-
-def test_data(params):
-    build_dataset_test(params, 'val')
+def test_model(params):
     build_dataset_test(params, 'test')
     dataset = _build_dataset_test(params)
 
     params['INPUT_VOCABULARY_SIZE'] = dataset.vocabulary_len[params['INPUTS_IDS_DATASET'][1]]  # Load model
-    food_model = loadModel(params['STORE_PATH'], 10)
+    food_model = loadModel(params['STORE_PATH'], 1)
     food_model.setOptimizer()
 
     for s in params["EVAL_ON_SETS"]:
@@ -111,6 +87,7 @@ def test_data(params):
         }
         predictions = food_model.predictNet(dataset, params_prediction)[s]
 
+        acc = 0
         total, top1, top2, top5, top7, top10 = 0, 0, 0, 0, 0, 0
         index = open("%s/data/index_%s.txt" % (Path.DATA_FOLDER, s), 'r')
         outs = open("%s/data/new_outs_%s.txt" % (Path.DATA_FOLDER, s), 'r')
@@ -121,6 +98,7 @@ def test_data(params):
             total += 1
             max_o = np.argmax(o_content[prev_i:prev_i + i])
             sorted_i = np.argsort([-x[0] for x in predictions[prev_i:prev_i + i]])
+            acc += (i - list(sorted_i).index(max_o)) * 1.0 / i
             if max_o in sorted_i[:1]:
                 top1 += 1
             if max_o in sorted_i[:2]:
@@ -136,11 +114,13 @@ def test_data(params):
         print("Top 2: %s" % (top2 * 100.0 / total))
         print("Top 5: %s" % (top5 * 100.0 / total))
         print("Top 7: %s" % (top7 * 100.0 / total))
-        print("Top 10: %s" % (top7 * 100.0 / total))
+        print("Top 10: %s" % (top10 * 100.0 / total))
+        print("Acc: %s" % (acc / total))
+        print("Total: %s" % total)
 
 
 if __name__ == "__main__":
     parameters = load_parameters()
     logging.info('Running training.')
-    test_data(parameters)
+    test_model(parameters)
     logging.info('Done!')

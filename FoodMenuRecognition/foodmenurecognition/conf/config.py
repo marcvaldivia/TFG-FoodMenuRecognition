@@ -1,6 +1,6 @@
 def load_parameters():
     # Input data params
-    DATA_ROOT_PATH = '/Users/yoda/git/TFG-FoodMenuRecognition/dataset'
+    DATA_ROOT_PATH = '/Volumes/UB/9. TFG/dataset'
 
     # preprocessed features
     DATASET_NAME = 'YELP-MVA'
@@ -30,7 +30,7 @@ def load_parameters():
     # Evaluation params
     METRICS = [
         'multiclass_metrics']  # Metric used for evaluating model after each epoch (leave empty if only prediction is required)
-    EVAL_ON_SETS = ['val', 'test']  # Possible values: 'train', 'val' and 'test' (external evaluator)
+    EVAL_ON_SETS = ['test']  # Possible values: 'train', 'val' and 'test' (external evaluator)
     EVAL_ON_SETS_KERAS = []  # Possible values: 'train', 'val' and 'test' (Keras' evaluator)
     START_EVAL_ON_EPOCH = 1  # First epoch where the model will be evaluated
     EVAL_EACH_EPOCHS = False  # Select whether evaluate between N epochs or N updates
@@ -49,7 +49,7 @@ def load_parameters():
     # Input image parameters
     DATA_AUGMENTATION = False  # Apply data augmentation on input data (noise on features)
     DATA_AUGMENTATION_TYPE = ['random_selection']  # 'random_selection', 'noise'
-    IMG_FEAT_SIZE = 1017  # Size of the image features
+    IMG_FEAT_SIZE = 1187  # Size of the image features
 
     # Output text parameters
     OUTPUT_VOCABULARY_SIZE = 0  # Size of the input vocabulary. Set to 0 for using all,

@@ -155,19 +155,20 @@ def build_dataset_test(params, name):
     for link in l_content:
         segments = link.split("/")
         food_dir = segments[:-2]
-        d = Path.DATA_FOLDER + "/" + food_dir[0] + "/" + food_dir[1]
-        # d = Path.DATA_FOLDER + "/" + food_dir[0]
         count = 0
-        for food in [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]:
-        # filesDepth2 = glob.glob('%s/*/*' % d)
-        # dirsDepth2 = filter(lambda f: os.path.isdir(f), filesDepth2)
-        # for food in dirsDepth2:
-            count += 1
-            food_name = food.split("/")[-1]
-            new_dishes.write("%s\n" % food_name)
-            new_links.write("%s\n" % link)
-            new_outs.write("%s\n" % ("0" if food_name != segments[-2] else "1"))
-        index.write("%s\n" % count)
+        d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
+        all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
+        #d = Path.DATA_FOLDER + "/" + food_dir[-2]
+        #filesDepth2 = glob.glob('%s/*/*' % d)
+        #all_foods = filter(lambda f: os.path.isdir(f), filesDepth2)
+        if len(all_foods) > 5:
+            for food in all_foods:
+                count += 1
+                food_name = food.split("/")[-1]
+                new_dishes.write("%s\n" % food_name)
+                new_links.write("%s\n" % link)
+                new_outs.write("%s\n" % ("0" if food_name != segments[-2] else "1"))
+            index.write("%s\n" % count)
     new_dishes.close()
     new_links.close()
     new_outs.close()

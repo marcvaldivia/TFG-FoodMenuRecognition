@@ -149,6 +149,10 @@ class FoodDesc_Model(Model_Wrapper):
             y = K.l2_normalize(y, axis=-1)
             return -K.mean(x * y, axis=-1, keepdims=True)
 
-        dist = Lambda(t, name=self.ids_outputs[0])([emb_food, emb_image])
+        def distance(vests):
+            y_true, y_pred = vests
+            return 1/(1+K.sqrt(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True)))
+
+        dist = Lambda(distance, name=self.ids_outputs[0])([emb_food, emb_image])
 
         self.model = Model(input=[image, food_word], output=dist)

@@ -2,3 +2,4 @@ setuptools>=2.1
 tensorflow>=1.6
 numpy>=1.14.0
 pandas>=0.22.0
+cloudpickle>=0.4.1
