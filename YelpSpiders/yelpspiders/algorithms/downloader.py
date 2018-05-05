@@ -26,26 +26,40 @@ class Downloader:
             self.execute_restaurant(f, data)
 
     def execute_restaurant(self, f, data):
-        # Get the different menus of the current restaurant
-        for m in data['menus']:
-            menu_name = m.keys()[0]  # Name of the menu
-            directory = "%s/%s" % (f, menu_name)
-            # Creates a directory to store the menu files
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            # Get the different dishes of the menu grouped by headers
-            for k in m[menu_name]:  # 'k' is a dictionary with the dishes for every header
-                headers = k.keys()
-                for h in headers:
-                    # Get the different dishes
-                    for dish in k[h]:
-                        # Creates a directory for every dish in the menu
-                        dish_directory = "%s/%s" % (directory, dish)
-                        if not os.path.exists(dish_directory):
-                            os.makedirs(dish_directory)
-                        logging.info("Dish directory: %s" % dish_directory)
-                        logging.info("Dish name: %s" % dish)
-                        self.execute_download(k, h, dish, dish_directory)
+        try:
+            # Get the different menus of the current restaurant
+            for m in data['menus']:
+                menu_name = m.keys()[0]  # Name of the menu
+                directory = "%s/%s" % (f, menu_name)
+                # Creates a directory to store the menu files
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                # Get the different dishes of the menu grouped by headers
+                for k in m[menu_name]:  # 'k' is a dictionary with the dishes for every header
+                    headers = k.keys()
+                    for h in headers:
+                        # Get the different dishes
+                        for dish in k[h]:
+                            # Creates a directory for every dish in the menu
+                            dish_directory = "%s/%s" % (directory, dish)
+                            if not os.path.exists(dish_directory):
+                                os.makedirs(dish_directory)
+                            logging.info("Dish directory: %s" % dish_directory)
+                            logging.info("Dish name: %s" % dish)
+                            self.execute_download(k, h, dish, dish_directory)
+        except Exception as ex:
+            logging.error(str(ex))
+
+    @staticmethod
+    def call_to_api(img):
+        url = 'http://logmeal.ml:8088/api/v0.6/foodRecognitionMultipleUrl'
+        img_urls = [img]
+        data = dict()
+        data['urls'] = img_urls
+        data['numberFoods'] = -1
+        headers = {'Content-Type': 'application/json'}
+        req = requests.post(url, json=data, headers=headers)
+        return req
 
     def execute_download(self, k, h, dish, dish_directory):
         # Get all the URL images for every dish
@@ -59,10 +73,12 @@ class Downloader:
                 logging.info("Dish image URL: %s" % url)
                 print("Dish image URL: %s" % url)
                 print(path_to_write)
-                r = requests.get("http://logmeal.ml:8088/api/v0.5/complete?img_url=%s" % url)
+                # r = requests.get("http://logmeal.ml:8088/api/v0.5/complete?img_url=%s" % url)
+                r = self.call_to_api(url)
                 # If the response is positive, we will download the image and write the answer
                 if r.status_code == 200:
-                    urllib.urlretrieve(url, "%s.jpg" % path_to_write)
+                    if not os.path.exists("%s.jpg" % path_to_write):
+                        urllib.urlretrieve(url, "%s.jpg" % path_to_write)
                     with open("%s.json" % path_to_write, "w") as json_file:
                         json_file.write(r.text)
 

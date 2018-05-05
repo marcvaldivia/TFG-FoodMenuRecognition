@@ -57,7 +57,7 @@ def train_model(params):
     logger.debug('Starting training!')
     training_params = {
         'normalize': False,
-        'n_epochs': 1,
+        'n_epochs': 50,
         'batch_size': 64,
         'n_parallel_loaders': 1,
         'metric_check': 'accuracy'
@@ -71,19 +71,20 @@ def train_model(params):
 
 
 def test_model(params):
-    build_dataset_test(params, 'test')
-    dataset = _build_dataset_test(params)
-
+    dataset = build_dataset(params)
     params['INPUT_VOCABULARY_SIZE'] = dataset.vocabulary_len[params['INPUTS_IDS_DATASET'][1]]  # Load model
-    food_model = loadModel(params['STORE_PATH'], 1)
+    food_model = loadModel(params['STORE_PATH'], 32)
     food_model.setOptimizer()
 
     for s in params["EVAL_ON_SETS"]:
+        build_dataset_test(params, s)
+        dataset = _build_dataset_test(params)
         # Apply model predictions
         params_prediction = {
             'predict_on_sets': [s],
             'normalize': False,
-            'n_parallel_loaders': 1
+            'n_parallel_loaders': 1,
+            'verbose': False
         }
         predictions = food_model.predictNet(dataset, params_prediction)[s]
 
@@ -122,5 +123,6 @@ def test_model(params):
 if __name__ == "__main__":
     parameters = load_parameters()
     logging.info('Running training.')
+    train_model(parameters)
     test_model(parameters)
     logging.info('Done!')

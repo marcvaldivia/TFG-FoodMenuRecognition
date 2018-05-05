@@ -163,5 +163,5 @@ class Spider:
 
 
 if __name__ == '__main__':
-    s = Spider('http://www.yelp.com/search?find_loc=SanJose,+CA&cflt=restaurants', max_pages=20)
+    s = Spider('http://www.yelp.com/search?find_loc=LosAngeles,+CA&cflt=restaurants', max_pages=100)
     s.execute()

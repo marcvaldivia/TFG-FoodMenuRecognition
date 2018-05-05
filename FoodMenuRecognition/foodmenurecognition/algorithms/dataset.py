@@ -29,19 +29,34 @@ class DataSet:
         print("Recognition: %s" % len(self.result_recognition))
         print("Family: %s" % len(self.result_family))
 
+    @staticmethod
+    def get_new_version_api(json_file, name):
+        dict_ret = list()
+        json_file = json_file['results'][0]
+        to_enum = json_file[name]['tops'] if name != 'ingredients' else json_file[name][name]
+        probabilities = json_file[name]['probs']
+        for idx, top in enumerate(to_enum):
+            dict_ret.append({"class": top, "prob": probabilities[idx]})
+        return dict_ret
+
     def execute(self):
         for x in self.all_set:
-            json_file = x[1]
-            vec_ingredients = np.zeros(self.idx_ingredients + 1, dtype=float)
-            vec_recognition = np.zeros(self.idx_recognition + 1, dtype=float)
-            vec_family = np.zeros(self.idx_family + 1, dtype=float)
-            for ingredient in json_file['result_ingredients']:
-                vec_ingredients[self.result_ingredients[ingredient['class']]] = ingredient['prob']
-            for recognition in json_file['result_recognition']:
-                vec_recognition[self.result_recognition[recognition['class']]] = recognition['prob']
-            for family in json_file['result_family']:
-                vec_family[self.result_family[family['class']]] = family['prob']
-            np.save("%s.npy" % x[0], np.concatenate((vec_ingredients, vec_recognition, vec_family)))
+            try:
+                json_file = x[1]
+                vec_ingredients = np.zeros(self.idx_ingredients + 1, dtype=float)
+                vec_recognition = np.zeros(self.idx_recognition + 1, dtype=float)
+                vec_family = np.zeros(self.idx_family + 1, dtype=float)
+                for ingredient in self.get_new_version_api(json_file, 'ingredients'):
+                    vec_ingredients[self.result_ingredients[ingredient['class']]] = ingredient['prob']
+                for recognition in self.get_new_version_api(json_file, 'foodRecognition'):
+                    vec_recognition[self.result_recognition[recognition['class']]] = recognition['prob']
+                for family in self.get_new_version_api(json_file, 'foodFamily'):
+                    vec_family[self.result_family[family['class']]] = family['prob']
+                np.save("%s.npy" % x[0], np.concatenate((vec_ingredients, vec_recognition, vec_family)))
+            except:
+                logging.error(x)
+                os.remove("%s.jpg" % x[0])
+                os.remove("%s.json" % x[0])
 
     def execute_files(self, name):
         dishes = open("%s/data/dishes_%s.txt" % (self.root_folder, name), 'w')
@@ -68,15 +83,18 @@ class DataSet:
     def create_dictionaries(self):
         dishes = self.all_set
         for d in dishes:
-            json_file = d[1]
-            for ingredient in json_file['result_ingredients']:
-                self.idx_ingredients = self.dictionary_el(self.result_ingredients, self.idx_ingredients,
-                                                          ingredient['class'])
-            for recognition in json_file['result_recognition']:
-                self.idx_recognition = self.dictionary_el(self.result_recognition, self.idx_recognition,
-                                                          recognition['class'])
-            for family in json_file['result_family']:
-                self.idx_family = self.dictionary_el(self.result_family, self.idx_family, family['class'])
+            try:
+                json_file = d[1]
+                for ingredient in self.get_new_version_api(json_file, 'ingredients'):
+                    self.idx_ingredients = self.dictionary_el(self.result_ingredients, self.idx_ingredients,
+                                                              ingredient['class'])
+                for recognition in self.get_new_version_api(json_file, 'foodRecognition'):
+                    self.idx_recognition = self.dictionary_el(self.result_recognition, self.idx_recognition,
+                                                              recognition['class'])
+                for family in self.get_new_version_api(json_file, 'foodFamily'):
+                    self.idx_family = self.dictionary_el(self.result_family, self.idx_family, family['class'])
+            except:
+                logging.error(d)
 
     @staticmethod
     def dictionary_el(dictionary, idx, el):

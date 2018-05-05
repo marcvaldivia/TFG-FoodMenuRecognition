@@ -106,7 +106,7 @@ FoodMenuRecognition/.idea/*
 *.npy
 
 # Projects
-.idea/
+#.idea/
 YelpSpiders/.idea/
 FoodMenuRecognition/.idea/
 YelpSpiders/YelpSpiders.iml
@@ -114,3 +114,4 @@ FoodMenuRecognition/FoodMenuRecognition.iml
 dataset/data/*.txt
 *.h5
 *.pkl
+FoodMenuRecognition/foodmenurecognition/algorithms/trained_models/*

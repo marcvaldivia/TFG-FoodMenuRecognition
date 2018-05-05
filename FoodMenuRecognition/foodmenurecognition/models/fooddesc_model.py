@@ -35,7 +35,7 @@ class FoodDesc_Model(Model_Wrapper):
             if self.verbose > 0:
                 logging.info("<<< Loading pretrained word vectors from: " + params['TRG_PRETRAINED_VECTORS'] + " >>>")
             self.trg_word_vectors = None  # np.load(os.path.join(params['TRG_PRETRAINED_VECTORS'])).item()
-            data = pd.read_hdf("/Users/yoda/git/TFG-FoodMenuRecognition/mini.h5")
+            data = pd.read_hdf(params['DATA_WORD2VEC'])
             self.trg_embedding_weights = np.random.rand(params['INPUT_VOCABULARY_SIZE'],
                                                         params['TARGET_TEXT_EMBEDDING_SIZE'])
             for word, index in self.vocabularies[self.ids_inputs[1]]['words2idx'].iteritems():
