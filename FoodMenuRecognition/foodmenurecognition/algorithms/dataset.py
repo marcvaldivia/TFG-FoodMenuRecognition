@@ -132,7 +132,7 @@ class DataSet:
         random.shuffle(self.folders)
         my_folders = [self.folders]
         if split_kind == 0:
-            train, other = train_test_split(self.folders, test_size=0.4)
+            train, other = train_test_split(self.folders, test_size=0.3)
             val, test = train_test_split(other, test_size=0.7)
             my_folders = [train] + [val] + [test]
         for l1, folds in enumerate(my_folders):

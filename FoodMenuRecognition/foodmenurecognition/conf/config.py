@@ -50,7 +50,7 @@ def load_parameters():
     # Input image parameters
     DATA_AUGMENTATION = False  # Apply data augmentation on input data (noise on features)
     DATA_AUGMENTATION_TYPE = ['random_selection']  # 'random_selection', 'noise'
-    IMG_FEAT_SIZE = 1251  # Size of the image features
+    IMG_FEAT_SIZE = 1255  # Size of the image features
 
     # Output text parameters
     OUTPUT_VOCABULARY_SIZE = 0  # Size of the input vocabulary. Set to 0 for using all,

@@ -73,7 +73,7 @@ def train_model(params):
 def test_model(params):
     dataset = build_dataset(params)
     params['INPUT_VOCABULARY_SIZE'] = dataset.vocabulary_len[params['INPUTS_IDS_DATASET'][1]]  # Load model
-    food_model = loadModel(params['STORE_PATH'], 32)
+    food_model = loadModel(params['STORE_PATH'], 12)
     food_model.setOptimizer()
 
     for s in params["EVAL_ON_SETS"]:
@@ -123,6 +123,6 @@ def test_model(params):
 if __name__ == "__main__":
     parameters = load_parameters()
     logging.info('Running training.')
-    train_model(parameters)
+    #train_model(parameters)
     test_model(parameters)
     logging.info('Done!')
