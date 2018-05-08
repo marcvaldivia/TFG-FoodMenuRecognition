@@ -132,27 +132,6 @@ class FoodDesc_Model(Model_Wrapper):
                         return_sequences=False,
                         name='encoder_LSTM')(emb)
 
-        def t(x):
-            A, B = x
-            fsp = x[0] - K.mean(x[0], axis=-1, keepdims=True)
-            fst = x[1] - K.mean(x[1], axis=-1, keepdims=True)
-            sum_up = K.sum(fsp * fst, axis=-1, keepdims=True)
-            mul_down = K.sqrt(K.sum(K.square(fsp), axis=-1, keepdims=True)) * K.sqrt(K.sum(K.square(fst), axis=-1,
-                                                                                           keepdims=True))
-            div = sum_up / mul_down
-            return K.abs(div)
-            # return K.l2_normalize(K.sum(K.abs(A - B), axis=1, keepdims=True))
-
-        def cosine_distance(vests):
-            x, y = vests
-            x = K.l2_normalize(x, axis=-1)
-            y = K.l2_normalize(y, axis=-1)
-            return -K.mean(x * y, axis=-1, keepdims=True)
-
-        def distance(vests):
-            y_true, y_pred = vests
-            return 1/(1+K.sqrt(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True)))
-
-        dist = Lambda(distance, name=self.ids_outputs[0])([emb_food, emb_image])
+        dist = Lambda(params['distance'], name=self.ids_outputs[0])([emb_food, emb_image])
 
         self.model = Model(input=[image, food_word], output=dist)

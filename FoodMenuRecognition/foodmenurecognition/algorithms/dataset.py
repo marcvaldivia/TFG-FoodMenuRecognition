@@ -11,7 +11,7 @@ from foodmenurecognition.variables.paths import Path
 
 class DataSet:
 
-    def __init__(self, root_folder):
+    def __init__(self, root_folder, split_kind=2):
         self.root_folder = root_folder
         self.result_ingredients, self.idx_ingredients = dict(), -1
         self.result_recognition, self.idx_recognition = dict(), -1
@@ -19,7 +19,7 @@ class DataSet:
         self.folders = [o for o in os.listdir(self.root_folder)
                         if os.path.isdir("%s/%s" % (self.root_folder, o))]
         self.train_set, self.val_set, self.test_set = list(), list(), list()
-        self.generate_json(split_kind=2)
+        self.generate_json(split_kind=split_kind)
         self.all_set = self.train_set + self.val_set + self.test_set
         self.create_dictionaries()
         np.save("%s/data/ingredients.npy" % self.root_folder, self.result_ingredients)
@@ -132,7 +132,7 @@ class DataSet:
         random.shuffle(self.folders)
         my_folders = [self.folders]
         if split_kind == 0:
-            train, other = train_test_split(self.folders, test_size=0.3)
+            train, other = train_test_split(self.folders, test_size=0.2)
             val, test = train_test_split(other, test_size=0.7)
             my_folders = [train] + [val] + [test]
         for l1, folds in enumerate(my_folders):
