@@ -161,7 +161,7 @@ def build_dataset_test(params, name):
         #d = Path.DATA_FOLDER + "/" + food_dir[-2]
         #files_depth2 = glob.glob('%s/*/*' % d)
         #all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
-        if len(all_foods) > 2:
+        if len(all_foods) > 5:
             for food in all_foods:
                 count += 1
                 food_name = food.split("/")[-1]

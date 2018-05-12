@@ -82,7 +82,7 @@ def train_model(params, distance):
     logger.debug('Starting training!')
     training_params = {
         'normalize': False,
-        'n_epochs': 50,
+        'n_epochs': 32,
         'batch_size': 64,
         'n_parallel_loaders': 1,
         'metric_check': 'accuracy'
@@ -142,30 +142,32 @@ def test_model(params, s, i):
     print("Top 10: %s" % (top10 * 100.0 / total))
     print("Acc: %s" % (acc / total))
     print("Total: %s" % total)
-    return top1, top2, top5, top7, top10, acc
+    return (top1 * 100.0 / total), (top2 * 100.0 / total), (top5 * 100.0 / total), (top7 * 100.0 / total), (top10 * 100.0 / total), (acc / total)
 
 
 def grid_search(params):
     df = pd.DataFrame()
-    for d_type in [0, 1, 2]:
-        s = DataSet(Path.DATA_FOLDER, split_kind=d_type)
-        s.execute()
-        s.execute_files('train')
-        s.execute_files('val')
-        s.execute_files('test')
-        for distance in [pearson_sim, cosine_distance, eu_distance]:
-            if d_type != 0 and distance != pearson_sim:
+    try:
+        for d_type in [0, 1, 2]:
+            d = DataSet(Path.DATA_FOLDER, split_kind=d_type)
+            d.execute()
+            d.execute_files('train')
+            d.execute_files('val')
+            d.execute_files('test')
+            for distance in [pearson_sim, cosine_distance, eu_distance]:
                 train_model(params, distance)
-            for s in ['val', 'test']:
-                for i in range(1, 51):
-                    top1, top2, top5, top7, top10, acc = test_model(params, s, i)
-                    df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s, 'top1'] = top1
-                    df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s, 'top2'] = top2
-                    df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s, 'top5'] = top5
-                    df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s, 'top7'] = top7
-                    df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s, 'top10'] = top10
-                    df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s, 'acc'] = acc
-    df.to_csv("foodSameMenuGT2.csv")
+                for s in ['val', 'test']:
+                    for i in range(1, 33):
+                        top1, top2, top5, top7, top10, acc = test_model(params, s, i)
+                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'top1'] = top1
+                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'top2'] = top2
+                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'top5'] = top5
+                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'top7'] = top7
+                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'top10'] = top10
+                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'acc'] = acc
+    except:
+        pass
+    df.to_csv("foodSameMenuGT5.csv")
 
 
 if __name__ == "__main__":
