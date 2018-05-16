@@ -1,10 +1,9 @@
 import logging
 from timeit import default_timer as timer
 
-import numpy as np
 import pandas as pd
-from keras_wrapper.cnn_model import loadModel
 from keras.layers import *
+from keras_wrapper.cnn_model import loadModel
 
 from foodmenurecognition.algorithms.dataset import DataSet
 from foodmenurecognition.conf.config import load_parameters
@@ -14,6 +13,7 @@ from foodmenurecognition.variables.paths import Path
 
 logging.basicConfig(level=logging.DEBUG, format='[%(asctime)s] %(message)s', datefmt='%d/%m/%Y %H:%M:%S')
 logger = logging.getLogger(__name__)
+
 
 def pearson_sim(x):
     fsp = x[0] - K.mean(x[0], axis=-1, keepdims=True)
@@ -25,15 +25,17 @@ def pearson_sim(x):
     return K.abs(div)
     # return K.l2_normalize(K.sum(K.abs(A - B), axis=1, keepdims=True))
 
+
 def cosine_distance(vests):
     x, y = vests
     x = K.l2_normalize(x, axis=-1)
     y = K.l2_normalize(y, axis=-1)
     return -K.mean(x * y, axis=-1, keepdims=True)
 
+
 def eu_distance(vests):
     y_true, y_pred = vests
-    return 1/(1+K.sqrt(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True)))
+    return 1 / (1 + K.sqrt(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True)))
 
 
 def train_model(params, distance):
@@ -82,7 +84,7 @@ def train_model(params, distance):
     logger.debug('Starting training!')
     training_params = {
         'normalize': False,
-        'n_epochs': 32,
+        'n_epochs': 1,
         'batch_size': 64,
         'n_parallel_loaders': 1,
         'metric_check': 'accuracy'
@@ -142,7 +144,8 @@ def test_model(params, s, i):
     print("Top 10: %s" % (top10 * 100.0 / total))
     print("Acc: %s" % (acc / total))
     print("Total: %s" % total)
-    return (top1 * 100.0 / total), (top2 * 100.0 / total), (top5 * 100.0 / total), (top7 * 100.0 / total), (top10 * 100.0 / total), (acc / total)
+    return (top1 * 100.0 / total), (top2 * 100.0 / total), (top5 * 100.0 / total), (top7 * 100.0 / total), (
+                top10 * 100.0 / total), (acc / total)
 
 
 def grid_search(params):
@@ -159,12 +162,18 @@ def grid_search(params):
                 for s in ['val', 'test']:
                     for i in range(1, 33):
                         top1, top2, top5, top7, top10, acc = test_model(params, s, i)
-                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'top1'] = top1
-                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'top2'] = top2
-                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'top5'] = top5
-                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'top7'] = top7
-                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'top10'] = top10
-                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'acc'] = acc
+                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
+                            distance), 'top1'] = top1
+                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
+                            distance), 'top2'] = top2
+                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
+                            distance), 'top5'] = top5
+                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
+                            distance), 'top7'] = top7
+                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
+                            distance), 'top10'] = top10
+                        df.loc[
+                            str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'acc'] = acc
     except:
         pass
     df.to_csv("foodSameMenuGT5.csv")
@@ -173,7 +182,7 @@ def grid_search(params):
 if __name__ == "__main__":
     parameters = load_parameters()
     logging.info('Running training.')
-    #train_model(parameters)
-    #test_model(parameters)
-    grid_search(parameters)
+    train_model(parameters, eu_distance)
+    test_model(parameters, 'test', 1)
+    # grid_search(parameters)
     logging.info('Done!')

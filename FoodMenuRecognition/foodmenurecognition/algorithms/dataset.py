@@ -13,7 +13,7 @@ class DataSet:
 
     def __init__(self, root_folder, split_kind=2):
         self.root_folder = root_folder
-        self.result_ingredients, self.idx_ingredients = dict(), -1
+        #self.result_ingredients, self.idx_ingredients = dict(), -1
         self.result_recognition, self.idx_recognition = dict(), -1
         self.result_family, self.idx_family = dict(), -1
         self.folders = [o for o in os.listdir(self.root_folder)
@@ -22,10 +22,10 @@ class DataSet:
         self.generate_json(split_kind=split_kind)
         self.all_set = self.train_set + self.val_set + self.test_set
         self.create_dictionaries()
-        np.save("%s/data/ingredients.npy" % self.root_folder, self.result_ingredients)
+        #np.save("%s/data/ingredients.npy" % self.root_folder, self.result_ingredients)
         np.save("%s/data/recognition.npy" % self.root_folder, self.result_recognition)
         np.save("%s/data/family.npy" % self.root_folder, self.result_family)
-        print("Ingredients: %s" % len(self.result_ingredients))
+        #print("Ingredients: %s" % len(self.result_ingredients))
         print("Recognition: %s" % len(self.result_recognition))
         print("Family: %s" % len(self.result_family))
 
@@ -43,16 +43,16 @@ class DataSet:
         for x in self.all_set:
             try:
                 json_file = x[1]
-                vec_ingredients = np.zeros(self.idx_ingredients + 1, dtype=float)
+                #vec_ingredients = np.zeros(self.idx_ingredients + 1, dtype=float)
                 vec_recognition = np.zeros(self.idx_recognition + 1, dtype=float)
                 vec_family = np.zeros(self.idx_family + 1, dtype=float)
-                for ingredient in self.get_new_version_api(json_file, 'ingredients'):
-                    vec_ingredients[self.result_ingredients[ingredient['class']]] = ingredient['prob']
+                '''for ingredient in self.get_new_version_api(json_file, 'ingredients'):
+                    vec_ingredients[self.result_ingredients[ingredient['class']]] = ingredient['prob']'''
                 for recognition in self.get_new_version_api(json_file, 'foodRecognition'):
                     vec_recognition[self.result_recognition[recognition['class']]] = recognition['prob']
                 for family in self.get_new_version_api(json_file, 'foodFamily'):
                     vec_family[self.result_family[family['class']]] = family['prob']
-                np.save("%s.npy" % x[0], np.concatenate((vec_ingredients, vec_recognition, vec_family)))
+                np.save("%s.npy" % x[0], np.concatenate((vec_recognition, vec_family)))
             except:
                 logging.error(x)
                 os.remove("%s.jpg" % x[0])
@@ -70,12 +70,22 @@ class DataSet:
             links.write("%s.npy\n" % link)
             outs.write("1\n")
         if name == 'train':
-            my_dishes = list(my_dishes)
             for x in self.train_set:
                 link, dish = x[0].replace(Path.DATA_FOLDER, ""), x[2]
-                dishes.write("%s\n" % random.choice(my_dishes))
-                links.write("%s.npy\n" % link)
-                outs.write("0\n")
+                segments = link.split("/")
+                food_dir = segments[:-2]
+                count = 0
+                d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
+                all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
+                #d = Path.DATA_FOLDER + "/" + food_dir[-2]
+                #files_depth2 = glob.glob('%s/*/*' % d)
+                #all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
+                for food in all_foods:
+                    count += 1
+                    food_name = food.split("/")[-1]
+                    dishes.write("%s\n" % food_name)
+                    links.write("%s.npy\n" % link)
+                    outs.write("0\n")
             dishes.close()
             links.close()
             outs.close()
@@ -85,9 +95,9 @@ class DataSet:
         for d in dishes:
             try:
                 json_file = d[1]
-                for ingredient in self.get_new_version_api(json_file, 'ingredients'):
+                '''for ingredient in self.get_new_version_api(json_file, 'ingredients'):
                     self.idx_ingredients = self.dictionary_el(self.result_ingredients, self.idx_ingredients,
-                                                              ingredient['class'])
+                                                              ingredient['class'])'''
                 for recognition in self.get_new_version_api(json_file, 'foodRecognition'):
                     self.idx_recognition = self.dictionary_el(self.result_recognition, self.idx_recognition,
                                                               recognition['class'])

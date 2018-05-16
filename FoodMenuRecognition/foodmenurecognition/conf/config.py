@@ -1,7 +1,10 @@
+from foodmenurecognition.variables.paths import Path
+
+
 def load_parameters():
     # Input data params
-    DATA_ROOT_PATH = '/media/marcvaldivia/UB/TFG/dataset'
-    DATA_WORD2VEC = '/media/marcvaldivia/UB/TFG/mini.h5'
+    DATA_ROOT_PATH = Path.DATA_FOLDER
+    DATA_WORD2VEC = Path.DATA_FOLDER + '/data/mini.h5'
 
     # preprocessed features
     DATASET_NAME = 'YELP-MVA'
@@ -50,7 +53,7 @@ def load_parameters():
     # Input image parameters
     DATA_AUGMENTATION = False  # Apply data augmentation on input data (noise on features)
     DATA_AUGMENTATION_TYPE = ['random_selection']  # 'random_selection', 'noise'
-    IMG_FEAT_SIZE = 1255  # Size of the image features
+    IMG_FEAT_SIZE = 211  # Size of the image features
 
     # Output text parameters
     OUTPUT_VOCABULARY_SIZE = 0  # Size of the input vocabulary. Set to 0 for using all,
