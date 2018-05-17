@@ -5,6 +5,12 @@ import urllib
 
 import requests
 
+from keras.preprocessing import image
+from keras.applications.vgg16 import VGG16
+from keras.applications.vgg16 import preprocess_input
+from keras.models import Model
+import numpy as np
+
 from yelpspiders.variables.paths import Path
 
 
@@ -13,7 +19,23 @@ class Downloader:
     def __init__(self, root_folder, overwrite=False):
         self.root_folder = root_folder
         self.overwrite = overwrite
+        self.model = self.create_cnn()
         logging.info("Starting downloader...")
+
+    @staticmethod
+    def create_cnn():
+        base_model = VGG16(weights='imagenet')
+        model = Model(input=base_model.input, output=base_model.get_layer('fc2').output)
+        return model
+
+    def get_image_features(self, img_path):
+        img = image.load_img(img_path, target_size=(224, 224))
+        img_data = image.img_to_array(img)
+        img_data = np.expand_dims(img_data, axis=0)
+        img_data = preprocess_input(img_data)
+
+        vgg16_feature = self.model.predict(img_data)
+        return vgg16_feature
 
     def execute(self):
         # DataSet folders of the different restaurants
@@ -71,8 +93,7 @@ class Downloader:
             # Generate or update the image and JSON file according to the API response
             if not os.path.exists("%s.json" % path_to_write) or self.overwrite:
                 logging.info("Dish image URL: %s" % url)
-                print("Dish image URL: %s" % url)
-                print(path_to_write)
+                logging.info(path_to_write)
                 # r = requests.get("http://logmeal.ml:8088/api/v0.5/complete?img_url=%s" % url)
                 r = self.call_to_api(url)
                 # If the response is positive, we will download the image and write the answer
@@ -81,6 +102,11 @@ class Downloader:
                         urllib.urlretrieve(url, "%s.jpg" % path_to_write)
                     with open("%s.json" % path_to_write, "w") as json_file:
                         json_file.write(r.text)
+            # Generates the CNN features
+            if not os.path.exists("%s_cnn.npy" % path_to_write):
+                print("Generating CNN for %s " % path_to_write)
+                img_features = self.get_image_features("%s.jpg" % path_to_write)
+                np.save("%s_cnn.npy" % path_to_write, img_features)
 
     def remove_empty_folders(self, path, remove_root=True):
         if not os.path.isdir(path):

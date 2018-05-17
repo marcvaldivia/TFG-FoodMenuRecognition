@@ -2,7 +2,7 @@
 
 class Path(object):
 
-    DATA_FOLDER = "/media/marcvaldivia/UB/TFG/dataset"
+    DATA_FOLDER = "/Volumes/UB/TFG/dataset"
 
 
 class Links(object):

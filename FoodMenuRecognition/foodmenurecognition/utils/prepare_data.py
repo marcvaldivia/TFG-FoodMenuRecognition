@@ -156,11 +156,11 @@ def build_dataset_test(params, name):
         segments = link.split("/")
         food_dir = segments[:-2]
         count = 0
-        d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
-        all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
-        #d = Path.DATA_FOLDER + "/" + food_dir[-2]
-        #files_depth2 = glob.glob('%s/*/*' % d)
-        #all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
+        # d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
+        # all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
+        d = Path.DATA_FOLDER + "/" + food_dir[-2]
+        files_depth2 = glob.glob('%s/*/*' % d)
+        all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
         if len(all_foods) > 5:
             for food in all_foods:
                 count += 1

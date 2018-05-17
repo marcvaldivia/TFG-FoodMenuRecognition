@@ -15,6 +15,10 @@ def load_parameters():
                          'val': 'data/links_val.txt',
                          'test': 'data/links_test.txt',
                          }
+    CNN_FILES = {'train': 'data/cnn_train.txt',
+                    'val': 'data/cnn_val.txt',
+                    'test': 'data/cnn_test.txt',
+                    }
     DISHES_FILES = {'train': 'data/dishes_train.txt',
                     'val': 'data/dishes_val.txt',
                     'test': 'data/dishes_test.txt',

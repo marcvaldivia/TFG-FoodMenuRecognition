@@ -4,6 +4,7 @@ from timeit import default_timer as timer
 import pandas as pd
 from keras.layers import *
 from keras_wrapper.cnn_model import loadModel
+from sklearn.metrics import label_ranking_loss
 
 from foodmenurecognition.algorithms.dataset import DataSet
 from foodmenurecognition.conf.config import load_parameters
@@ -30,7 +31,7 @@ def cosine_distance(vests):
     x, y = vests
     x = K.l2_normalize(x, axis=-1)
     y = K.l2_normalize(y, axis=-1)
-    return -K.mean(x * y, axis=-1, keepdims=True)
+    return 1 - K.abs(-K.mean(x * y, axis=-1, keepdims=True))
 
 
 def eu_distance(vests):
@@ -38,7 +39,7 @@ def eu_distance(vests):
     return 1 / (1 + K.sqrt(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True)))
 
 
-def train_model(params, distance):
+def train_model(params, distance, epochs):
     # Load data
     dataset = build_dataset(params)
     params['INPUT_VOCABULARY_SIZE'] = dataset.vocabulary_len[params['INPUTS_IDS_DATASET'][1]]
@@ -56,21 +57,21 @@ def train_model(params, distance):
                                 clear_dirs=False)
 
     # Define the inputs and outputs mapping from our Dataset instance to our model
-    inputMapping = dict()
+    input_mapping = dict()
     for i, id_in in enumerate(params['INPUTS_IDS_DATASET']):
         if len(food_model.ids_inputs) > i:
             pos_source = dataset.ids_inputs.index(id_in)
             id_dest = food_model.ids_inputs[i]
-            inputMapping[id_dest] = pos_source
-    food_model.setInputsMapping(inputMapping)
+            input_mapping[id_dest] = pos_source
+    food_model.setInputsMapping(input_mapping)
 
-    outputMapping = dict()
+    output_mapping = dict()
     for i, id_out in enumerate(params['OUTPUTS_IDS_DATASET']):
         if len(food_model.ids_outputs) > i:
             pos_target = dataset.ids_outputs.index(id_out)
             id_dest = food_model.ids_outputs[i]
-            outputMapping[id_dest] = pos_target
-    food_model.setOutputsMapping(outputMapping)
+            output_mapping[id_dest] = pos_target
+    food_model.setOutputsMapping(output_mapping)
 
     food_model.setOptimizer()
     params['MAX_EPOCH'] += params['RELOAD']
@@ -84,7 +85,7 @@ def train_model(params, distance):
     logger.debug('Starting training!')
     training_params = {
         'normalize': False,
-        'n_epochs': 1,
+        'n_epochs': epochs,
         'batch_size': 64,
         'n_parallel_loaders': 1,
         'metric_check': 'accuracy'
@@ -114,7 +115,7 @@ def test_model(params, s, i):
     }
     predictions = food_model.predictNet(dataset, params_prediction)[s]
 
-    acc = 0
+    acc, r_loss = 0, list()
     total, top1, top2, top5, top7, top10 = 0, 0, 0, 0, 0, 0
     index = open("%s/data/index_%s.txt" % (Path.DATA_FOLDER, s), 'r')
     outs = open("%s/data/new_outs_%s.txt" % (Path.DATA_FOLDER, s), 'r')
@@ -123,6 +124,8 @@ def test_model(params, s, i):
     prev_i = 0
     for i in i_content:
         total += 1
+        r_loss.append(label_ranking_loss([o_content[prev_i:prev_i + i]],
+                                         [[x[0] for x in predictions[prev_i:prev_i + i].tolist()]]))
         max_o = np.argmax(o_content[prev_i:prev_i + i])
         sorted_i = np.argsort([-x[0] for x in predictions[prev_i:prev_i + i]])
         acc += (i - list(sorted_i).index(max_o)) * 1.0 / i
@@ -143,9 +146,10 @@ def test_model(params, s, i):
     print("Top 7: %s" % (top7 * 100.0 / total))
     print("Top 10: %s" % (top10 * 100.0 / total))
     print("Acc: %s" % (acc / total))
+    print("Ranking Loss: %s" % np.mean(r_loss))
     print("Total: %s" % total)
     return (top1 * 100.0 / total), (top2 * 100.0 / total), (top5 * 100.0 / total), (top7 * 100.0 / total), (
-                top10 * 100.0 / total), (acc / total)
+            top10 * 100.0 / total), (acc / total), np.mean(r_loss)
 
 
 def grid_search(params):
@@ -161,7 +165,7 @@ def grid_search(params):
                 train_model(params, distance)
                 for s in ['val', 'test']:
                     for i in range(1, 33):
-                        top1, top2, top5, top7, top10, acc = test_model(params, s, i)
+                        top1, top2, top5, top7, top10, acc, r_loss = test_model(params, s, i)
                         df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
                             distance), 'top1'] = top1
                         df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
@@ -174,6 +178,9 @@ def grid_search(params):
                             distance), 'top10'] = top10
                         df.loc[
                             str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'acc'] = acc
+                        df.loc[
+                            str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
+                                distance), 'r_loss'] = r_loss
     except:
         pass
     df.to_csv("foodSameMenuGT5.csv")
@@ -182,7 +189,7 @@ def grid_search(params):
 if __name__ == "__main__":
     parameters = load_parameters()
     logging.info('Running training.')
-    train_model(parameters, eu_distance)
-    test_model(parameters, 'test', 1)
+    train_model(parameters, cosine_distance, 5)
+    test_model(parameters, 'val', 511)
     # grid_search(parameters)
     logging.info('Done!')
