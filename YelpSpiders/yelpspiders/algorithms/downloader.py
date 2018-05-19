@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import json
 import logging
 import os
@@ -64,6 +67,7 @@ class Downloader:
                         for dish in k[h]:
                             # Creates a directory for every dish in the menu
                             dish_directory = "%s/%s" % (directory, dish)
+                            dish_directory = dish_directory.replace("*", "_")
                             if not os.path.exists(dish_directory):
                                 os.makedirs(dish_directory)
                             logging.info("Dish directory: %s" % dish_directory)
@@ -90,6 +94,7 @@ class Downloader:
             name = names[len(names)-2]
             logging.info("Dish name from URL: %s" % dish)
             path_to_write = "%s/%s" % (dish_directory, name)
+            path_to_write = path_to_write.replace("*", "_")
             # Generate or update the image and JSON file according to the API response
             if not os.path.exists("%s.json" % path_to_write) or self.overwrite:
                 logging.info("Dish image URL: %s" % url)

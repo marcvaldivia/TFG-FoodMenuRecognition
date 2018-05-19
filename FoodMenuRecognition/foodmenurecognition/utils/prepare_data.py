@@ -62,6 +62,25 @@ def build_dataset(params):
                     id=params['INPUTS_IDS_DATASET'][0],
                     feat_len=params['IMG_FEAT_SIZE'])
 
+        # INPUT DATA
+        ds.setInput(base_path + '/' + params['CNN_FILES']['train'],
+                    'train',
+                    type='image-features',
+                    id=params['INPUTS_IDS_DATASET'][2],
+                    feat_len=params['CNN_SIZE'])
+
+        ds.setInput(base_path + '/' + params['CNN_FILES']['val'],
+                    'val',
+                    type='image-features',
+                    id=params['INPUTS_IDS_DATASET'][2],
+                    feat_len=params['CNN_SIZE'])
+
+        ds.setInput(base_path + '/' + params['CNN_FILES']['test'],
+                    'test',
+                    type='image-features',
+                    id=params['INPUTS_IDS_DATASET'][2],
+                    feat_len=params['CNN_SIZE'])
+
         # OUTPUT DATA
         ds.setOutput(base_path + '/' + params['OUT_FILES']['train'],
                      'train',
@@ -128,6 +147,19 @@ def _build_dataset_test(params):
                 id=params['INPUTS_IDS_DATASET'][0],
                 feat_len=params['IMG_FEAT_SIZE'])
 
+    # INPUT DATA
+    ds.setInput(base_path + '/data/new_cnn_val.txt',
+                'val',
+                type='image-features',
+                id=params['INPUTS_IDS_DATASET'][2],
+                feat_len=params['CNN_SIZE'])
+
+    ds.setInput(base_path + '/data/new_cnn_test.txt',
+                'test',
+                type='image-features',
+                id=params['INPUTS_IDS_DATASET'][2],
+                feat_len=params['CNN_SIZE'])
+
     # OUTPUT DATA
     ds.setOutput(base_path + '/data/new_outs_val.txt',
                  'val',
@@ -149,6 +181,7 @@ def build_dataset_test(params, name):
     links = open(base_path + '/' + params['IMAGES_LIST_FILES'][name], 'r')
     new_dishes = open("%s/data/new_dishes_%s.txt" % (Path.DATA_FOLDER, name), 'w')
     new_links = open("%s/data/new_links_%s.txt" % (Path.DATA_FOLDER, name), 'w')
+    new_cnn = open("%s/data/new_cnn_%s.txt" % (Path.DATA_FOLDER, name), 'w')
     new_outs = open("%s/data/new_outs_%s.txt" % (Path.DATA_FOLDER, name), 'w')
     index = open("%s/data/index_%s.txt" % (Path.DATA_FOLDER, name), 'w')
     l_content = [x.strip() for x in links.readlines()]
@@ -162,14 +195,17 @@ def build_dataset_test(params, name):
         files_depth2 = glob.glob('%s/*/*' % d)
         all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
         if len(all_foods) > 5:
-            for food in all_foods:
-                count += 1
-                food_name = food.split("/")[-1]
-                new_dishes.write("%s\n" % food_name)
-                new_links.write("%s\n" % link)
-                new_outs.write("%s\n" % ("0" if food_name != segments[-2] else "1"))
-            index.write("%s\n" % count)
+            if os.path.exists(Path.DATA_FOLDER + link.replace(".npy", "_cnn.npy")):
+                for food in all_foods:
+                    count += 1
+                    food_name = food.split("/")[-1]
+                    new_dishes.write("%s\n" % food_name)
+                    new_links.write("%s\n" % link)
+                    new_cnn.write("%s\n" % link.replace(".npy", "_cnn.npy"))
+                    new_outs.write("%s\n" % ("0" if food_name != segments[-2] else "1"))
+                index.write("%s\n" % count)
     new_dishes.close()
     new_links.close()
+    new_cnn.close()
     new_outs.close()
     index.close()

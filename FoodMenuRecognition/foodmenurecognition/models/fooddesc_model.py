@@ -116,8 +116,10 @@ class FoodDesc_Model(Model_Wrapper):
     def Food_Img_Embedding(self, params):
 
         image = Input(name=self.ids_inputs[0], shape=tuple([params['IMG_FEAT_SIZE']]))
-
         emb_image = Dense(params['IMAGE_TEXT_MAPPING'])(image)
+
+        cnn = Input(name=self.ids_inputs[2], shape=tuple([params['CNN_SIZE']]))
+        emb_cnn = Dense(params['IMAGE_TEXT_MAPPING'])(cnn)
 
         food_word = Input(name=self.ids_inputs[1], batch_shape=tuple([None, None]), dtype='int32')
         shared_emb = Embedding(params['INPUT_VOCABULARY_SIZE'],
@@ -132,6 +134,7 @@ class FoodDesc_Model(Model_Wrapper):
                         return_sequences=False,
                         name='encoder_LSTM')(emb)
 
-        dist = Lambda(params['distance'], name=self.ids_outputs[0])([emb_food, emb_image])
+        added = Add()([emb_image, emb_cnn])
+        dist = Lambda(params['distance'], name=self.ids_outputs[0])([added, emb_food])
 
-        self.model = Model(input=[image, food_word], output=dist)
+        self.model = Model(input=[image, cnn, food_word], output=dist)

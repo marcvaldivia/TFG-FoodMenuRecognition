@@ -152,7 +152,7 @@ def test_model(params, s, i):
             top10 * 100.0 / total), (acc / total), np.mean(r_loss)
 
 
-def grid_search(params):
+def grid_search(params, epochs):
     df = pd.DataFrame()
     try:
         for d_type in [0, 1, 2]:
@@ -162,9 +162,9 @@ def grid_search(params):
             d.execute_files('val')
             d.execute_files('test')
             for distance in [pearson_sim, cosine_distance, eu_distance]:
-                train_model(params, distance)
+                train_model(params, distance, epochs)
                 for s in ['val', 'test']:
-                    for i in range(1, 33):
+                    for i in range(1, epochs):
                         top1, top2, top5, top7, top10, acc, r_loss = test_model(params, s, i)
                         df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
                             distance), 'top1'] = top1
@@ -183,13 +183,13 @@ def grid_search(params):
                                 distance), 'r_loss'] = r_loss
     except:
         pass
-    df.to_csv("foodSameMenuGT5.csv")
+    df.to_csv("noCNN_noIngredients_GT5.csv")
 
 
 if __name__ == "__main__":
     parameters = load_parameters()
     logging.info('Running training.')
-    train_model(parameters, cosine_distance, 5)
-    test_model(parameters, 'val', 511)
-    # grid_search(parameters)
+    train_model(parameters, eu_distance, 5)
+    test_model(parameters, 'val', 5)
+    # grid_search(parameters, 10)
     logging.info('Done!')

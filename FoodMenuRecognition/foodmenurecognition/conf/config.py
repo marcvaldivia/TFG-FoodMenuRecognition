@@ -30,7 +30,7 @@ def load_parameters():
                  }
 
     # Dataset parameters
-    INPUTS_IDS_DATASET = ['image', 'dish']  # Corresponding inputs of the dataset
+    INPUTS_IDS_DATASET = ['image', 'dish', 'cnn']  # Corresponding inputs of the dataset
     OUTPUTS_IDS_DATASET = ['corr']  # Corresponding outputs of the dataset
     INPUTS_IDS_MODEL = INPUTS_IDS_DATASET  # Corresponding inputs of the built model
     OUTPUTS_IDS_MODEL = OUTPUTS_IDS_DATASET  # Corresponding outputs of the built model
@@ -58,6 +58,7 @@ def load_parameters():
     DATA_AUGMENTATION = False  # Apply data augmentation on input data (noise on features)
     DATA_AUGMENTATION_TYPE = ['random_selection']  # 'random_selection', 'noise'
     IMG_FEAT_SIZE = 211  # Size of the image features
+    CNN_SIZE = 4096
 
     # Output text parameters
     OUTPUT_VOCABULARY_SIZE = 0  # Size of the input vocabulary. Set to 0 for using all,

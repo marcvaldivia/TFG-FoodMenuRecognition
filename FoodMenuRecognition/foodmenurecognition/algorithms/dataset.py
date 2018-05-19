@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import json
 import logging
 import os
@@ -66,30 +69,32 @@ class DataSet:
         my_dishes = set()
         for x in self.train_set if name == 'train' else self.val_set if name == 'val' else self.test_set:
             link, dish = x[0].replace(Path.DATA_FOLDER, ""), x[2]
-            my_dishes.add(dish)
-            dishes.write("%s\n" % dish)
-            links.write("%s.npy\n" % link)
-            cnn.write("%s_cnn.npy\n" % link)
-            outs.write("1\n")
+            if os.path.exists(Path.DATA_FOLDER + link + "_cnn.npy"):
+                my_dishes.add(dish)
+                dishes.write("%s\n" % dish)
+                links.write("%s.npy\n" % link)
+                cnn.write("%s_cnn.npy\n" % link)
+                outs.write("1\n")
         if name == 'train':
             for x in self.train_set:
                 link, dish = x[0].replace(Path.DATA_FOLDER, ""), x[2]
-                segments = link.split("/")
-                food_dir = segments[:-2]
-                count = 0
-                d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
-                all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
-                # d = Path.DATA_FOLDER + "/" + food_dir[-2]
-                # files_depth2 = glob.glob('%s/*/*' % d)
-                # all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
-                for food in [random.choice(all_foods)]:
-                    if food != dish:
-                        count += 1
-                        food_name = food.split("/")[-1]
-                        dishes.write("%s\n" % food_name)
-                        links.write("%s.npy\n" % link)
-                        cnn.write("%s_cnn.npy\n" % link)
-                        outs.write("0\n")
+                if os.path.exists(link + "_cnn.npy"):
+                    segments = link.split("/")
+                    food_dir = segments[:-2]
+                    count = 0
+                    d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
+                    all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
+                    # d = Path.DATA_FOLDER + "/" + food_dir[-2]
+                    # files_depth2 = glob.glob('%s/*/*' % d)
+                    # all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
+                    for food in [random.choice(all_foods)]:
+                        if food != dish:
+                            count += 1
+                            food_name = food.split("/")[-1]
+                            dishes.write("%s\n" % food_name)
+                            links.write("%s.npy\n" % link)
+                            cnn.write("%s_cnn.npy\n" % link)
+                            outs.write("0\n")
             dishes.close()
             links.close()
             outs.close()
