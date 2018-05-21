@@ -195,13 +195,14 @@ def build_dataset_test(params, name):
         files_depth2 = glob.glob('%s/*/*' % d)
         all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
         if len(all_foods) > 5:
-            if os.path.exists(Path.DATA_FOLDER + link.replace(".npy", "_cnn.npy")):
+            cnn_path = link.replace(".npy", "_cnn.npy")
+            if os.path.exists(Path.DATA_FOLDER + cnn_path):
                 for food in all_foods:
                     count += 1
                     food_name = food.split("/")[-1]
                     new_dishes.write("%s\n" % food_name)
                     new_links.write("%s\n" % link)
-                    new_cnn.write("%s\n" % link.replace(".npy", "_cnn.npy"))
+                    new_cnn.write("%s\n" % cnn_path)
                     new_outs.write("%s\n" % ("0" if food_name != segments[-2] else "1"))
                 index.write("%s\n" % count)
     new_dishes.close()

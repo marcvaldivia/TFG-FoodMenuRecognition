@@ -135,6 +135,8 @@ class FoodDesc_Model(Model_Wrapper):
                         name='encoder_LSTM')(emb)
 
         added = Add()([emb_image, emb_cnn])
-        dist = Lambda(params['distance'], name=self.ids_outputs[0])([added, emb_food])
+
+        dist = Lambda(params['distance'], name=self.ids_outputs[0])([added, emb_food]) if params['cnn'] \
+            else Lambda(params['distance'], name=self.ids_outputs[0])([emb_image, emb_food])
 
         self.model = Model(input=[image, cnn, food_word], output=dist)

@@ -69,7 +69,8 @@ def load_parameters():
     MIN_OCCURRENCES_VOCAB = 0  # Minimum number of occurrences allowed for the words in the vocabulay.
 
     # Optimizer parameters (see model.compile() function)
-    LOSS = 'binary_crossentropy'
+    # LOSS = 'binary_crossentropy'
+    LOSS = 'mean_squared_error'
 
     OPTIMIZER = 'Adadelta'  # Optimizer
     LR = 1.  # Learning rate. Recommended values - Adam 0.001 - Adadelta 1.0

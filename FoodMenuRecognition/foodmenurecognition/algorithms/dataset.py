@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import random
+import glob
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -14,8 +15,9 @@ from foodmenurecognition.variables.paths import Path
 
 class DataSet:
 
-    def __init__(self, root_folder, split_kind=2):
+    def __init__(self, root_folder, split_kind=2, ingredients=False):
         self.root_folder = root_folder
+        self.ingredients = ingredients
         self.result_ingredients, self.idx_ingredients = dict(), -1
         self.result_recognition, self.idx_recognition = dict(), -1
         self.result_family, self.idx_family = dict(), -1
@@ -55,7 +57,10 @@ class DataSet:
                     vec_recognition[self.result_recognition[recognition['class']]] = recognition['prob']
                 for family in self.get_new_version_api(json_file, 'foodFamily'):
                     vec_family[self.result_family[family['class']]] = family['prob']
-                np.save("%s.npy" % x[0], np.concatenate((vec_recognition, vec_family)))
+                if self.ingredients:
+                    np.save("%s.npy" % x[0], np.concatenate((vec_ingredients, vec_recognition, vec_family)))
+                else:
+                    np.save("%s.npy" % x[0], np.concatenate((vec_recognition, vec_family)))
             except:
                 logging.error(x)
                 os.remove("%s.jpg" % x[0])
@@ -82,11 +87,11 @@ class DataSet:
                     segments = link.split("/")
                     food_dir = segments[:-2]
                     count = 0
-                    d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
-                    all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
-                    # d = Path.DATA_FOLDER + "/" + food_dir[-2]
-                    # files_depth2 = glob.glob('%s/*/*' % d)
-                    # all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
+                    # d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
+                    # all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
+                    d = Path.DATA_FOLDER + "/" + food_dir[-2]
+                    files_depth2 = glob.glob('%s/*/*' % d)
+                    all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
                     for food in [random.choice(all_foods)]:
                         if food != dish:
                             count += 1
@@ -147,7 +152,7 @@ class DataSet:
             elif l3 == 2:
                 self.test_set.append((json_f.replace(".json", ""), json_object, d))
 
-    def generate_json(self, split_kind=0):
+    def generate_json(self, split_kind=2):
         random.shuffle(self.folders)
         my_folders = [self.folders]
         if split_kind == 0:
@@ -164,7 +169,7 @@ class DataSet:
                     random.shuffle(dishes)
                     my_dishes = [dishes]
                     if split_kind == 1:
-                        train, other = train_test_split(dishes, test_size=0.4)
+                        train, other = train_test_split(dishes, test_size=0.2)
                         val, test = train_test_split(other, test_size=0.7)
                         my_dishes = [train] + [val] + [test]
                     for l2, ds in enumerate(my_dishes):
@@ -174,7 +179,7 @@ class DataSet:
                             random.shuffle(json_files)
                             my_json = [json_files]
                             if split_kind == 2:
-                                train, other = train_test_split(json_files, test_size=0.4)
+                                train, other = train_test_split(json_files, test_size=0.2)
                                 val, test = train_test_split(other, test_size=0.7)
                                 my_json = [train] + [val] + [test]
                             for l3, j_son in enumerate(my_json):
@@ -182,10 +187,10 @@ class DataSet:
                                     json_f = "%s/%s/%s/%s/%s" % (self.root_folder, f, sub, d, json_f)
                                     try:
                                         json_object = json.load(open(json_f))
-                                        if len(json_files) > 4:
-                                            self.decide_where_to_add(l1, l2, l3, split_kind, json_f, json_object, d)
-                                        else:
-                                            self.train_set.append((json_f.replace(".json", ""), json_object, d))
+                                        #if len(json_files) > 4:
+                                        self.decide_where_to_add(l1, l2, l3, split_kind, json_f, json_object, d)
+                                        #else:
+                                        #    self.train_set.append((json_f.replace(".json", ""), json_object, d))
                                     except:
                                         logging.error("Error loading JSON file %s" % json_f)
 

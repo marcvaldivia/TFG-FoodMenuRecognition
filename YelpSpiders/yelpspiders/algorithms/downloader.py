@@ -9,6 +9,8 @@ import urllib
 import requests
 
 from keras.preprocessing import image
+from keras.applications.inception_resnet_v2 import InceptionResNetV2
+
 from keras.applications.vgg16 import VGG16
 from keras.applications.vgg16 import preprocess_input
 from keras.models import Model

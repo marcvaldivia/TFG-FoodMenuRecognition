@@ -31,7 +31,7 @@ def cosine_distance(vests):
     x, y = vests
     x = K.l2_normalize(x, axis=-1)
     y = K.l2_normalize(y, axis=-1)
-    return 1 - K.abs(-K.mean(x * y, axis=-1, keepdims=True))
+    return K.abs(K.abs(-K.mean(x * y, axis=-1, keepdims=True)))
 
 
 def eu_distance(vests):
@@ -39,12 +39,13 @@ def eu_distance(vests):
     return 1 / (1 + K.sqrt(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True)))
 
 
-def train_model(params, distance, epochs):
+def train_model(params, distance, epochs, cnn=True):
     # Load data
     dataset = build_dataset(params)
     params['INPUT_VOCABULARY_SIZE'] = dataset.vocabulary_len[params['INPUTS_IDS_DATASET'][1]]
 
     params['distance'] = distance
+    params['cnn'] = cnn
 
     # Build model
     food_model = FoodDesc_Model(params,
@@ -104,14 +105,15 @@ def test_model(params, s, i):
     food_model = loadModel(params['STORE_PATH'], i)
     food_model.setOptimizer()
 
-    build_dataset_test(params, s)
+    build_dataset_test(params, 'val')
+    build_dataset_test(params, 'test')
     dataset = _build_dataset_test(params)
     # Apply model predictions
     params_prediction = {
         'predict_on_sets': [s],
         'normalize': False,
         'n_parallel_loaders': 1,
-        'verbose': False
+        'verbose': True
     }
     predictions = food_model.predictNet(dataset, params_prediction)[s]
 
@@ -155,41 +157,44 @@ def test_model(params, s, i):
 def grid_search(params, epochs):
     df = pd.DataFrame()
     try:
-        for d_type in [0, 1, 2]:
-            d = DataSet(Path.DATA_FOLDER, split_kind=d_type)
-            d.execute()
-            d.execute_files('train')
-            d.execute_files('val')
-            d.execute_files('test')
-            for distance in [pearson_sim, cosine_distance, eu_distance]:
-                train_model(params, distance, epochs)
-                for s in ['val', 'test']:
-                    for i in range(1, epochs):
-                        top1, top2, top5, top7, top10, acc, r_loss = test_model(params, s, i)
-                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
-                            distance), 'top1'] = top1
-                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
-                            distance), 'top2'] = top2
-                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
-                            distance), 'top5'] = top5
-                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
-                            distance), 'top7'] = top7
-                        df.loc[str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
-                            distance), 'top10'] = top10
-                        df.loc[
-                            str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(distance), 'acc'] = acc
-                        df.loc[
-                            str(d_type) + "/epoch:" + str(i) + "/set:" + s + "/distance:" + str(
-                                distance), 'r_loss'] = r_loss
+        for ing in [True, False]:
+            for d_type in [0, 1, 2]:
+                d = DataSet(Path.DATA_FOLDER, split_kind=d_type, ingredients=ing)
+                d.execute()
+                d.execute_files('train')
+                d.execute_files('val')
+                d.execute_files('test')
+                params['IMG_FEAT_SIZE'] = 211 if not ing else 1270
+                for cnn in [True, False]:
+                    for distance in [(pearson_sim, "pearson"), (eu_distance, "euclidean"), (cosine_distance, "cosine")]:
+                        train_model(params, distance[0], epochs, cnn)
+                        for s in ['val', 'test']:
+                            for i in range(1, epochs+1):
+                                top1, top2, top5, top7, top10, acc, r_loss = test_model(params, s, i)
+                                df.loc['epoch: %s / set: %s / distance: %s / cnn: %s / type: %s / ing.: %s'
+                                       % (i, s, distance[1], cnn, d_type, ing), 'top1'] = top1
+                                df.loc['epoch: %s / set: %s / distance: %s / cnn: %s / type: %s / ing.: %s'
+                                       % (i, s, distance[1], cnn, d_type, ing), 'top2'] = top2
+                                df.loc['epoch: %s / set: %s / distance: %s / cnn: %s / type: %s / ing.: %s'
+                                       % (i, s, distance[1], cnn, d_type, ing), 'top5'] = top5
+                                df.loc['epoch: %s / set: %s / distance: %s / cnn: %s / type: %s / ing.: %s'
+                                       % (i, s, distance[1], cnn, d_type, ing), 'top7'] = top7
+                                df.loc['epoch: %s / set: %s / distance: %s / cnn: %s / type: %s / ing.: %s'
+                                       % (i, s, distance[1], cnn, d_type, ing), 'top10'] = top10
+                                df.loc['epoch: %s / set: %s / distance: %s / cnn: %s / type: %s / ing.: %s'
+                                       % (i, s, distance[1], cnn, d_type, ing), 'acc'] = acc
+                                df.loc['epoch: %s / set: %s / distance: %s / cnn: %s / type: %s / ing.: %s'
+                                       % (i, s, distance[1], cnn, d_type, ing), 'r_loss'] = r_loss
+
     except:
         pass
-    df.to_csv("noCNN_noIngredients_GT5.csv")
+    df.to_csv("GridSearch.csv")
 
 
 if __name__ == "__main__":
     parameters = load_parameters()
     logging.info('Running training.')
-    train_model(parameters, eu_distance, 5)
-    test_model(parameters, 'val', 5)
-    # grid_search(parameters, 10)
+    # train_model(parameters, cosine_distance, 1)
+    # test_model(parameters, 'val', 1)
+    grid_search(parameters, 10)
     logging.info('Done!')
