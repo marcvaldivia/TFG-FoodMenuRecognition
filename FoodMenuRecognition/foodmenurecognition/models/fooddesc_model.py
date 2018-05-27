@@ -148,6 +148,7 @@ class FoodDesc_Model(Model_Wrapper):
         emb_food = LSTM(params['IMAGE_TEXT_MAPPING'],
                         return_sequences=False,
                         name='encoder_LSTM')(emb)
+
         # emb_food = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')(emb_food)
         # emb_food = l1(emb_food)
         # emb_food = l2(emb_food)

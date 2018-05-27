@@ -54,7 +54,16 @@ def eu_distance(vests):
     return K.sqrt(K.maximum(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True), K.epsilon()))
 
 
+<<<<<<< HEAD
 def train_model(params, epochs, distance=eu_distance, loss="binary_crossentropy", cnn=True):
+=======
+def euclidean(vests):
+    y_true, y_pred = vests
+    return K.sqrt(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True))
+
+
+def train_model(params, distance, epochs, cnn=True):
+>>>>>>> ab752ed8f8f0e6dd8afb23b75c015df575bac38c
     # Load data
     dataset = build_dataset(params)
     params['INPUT_VOCABULARY_SIZE'] = dataset.vocabulary_len[params['INPUTS_IDS_DATASET'][1]]
@@ -144,7 +153,11 @@ def test_model(params, s, i):
         total += 1
         r_loss.append(label_ranking_loss([o_content[prev_i:prev_i + i]],
                                          [[-x[0] for x in predictions[prev_i:prev_i + i].tolist()]]))
+<<<<<<< HEAD
         max_o = np.argmax(o_content[prev_i:prev_i + i])
+=======
+        max_o = np.argmin(o_content[prev_i:prev_i + i])
+>>>>>>> ab752ed8f8f0e6dd8afb23b75c015df575bac38c
         sorted_i = np.argsort([x[0] for x in predictions[prev_i:prev_i + i]])
         acc += (i - list(sorted_i).index(max_o)) * 1.0 / i
         if max_o in sorted_i[:1]:
@@ -276,6 +289,14 @@ def new_grid_search(params, epochs, split_kind):
 
 if __name__ == "__main__":
     parameters = load_parameters()
+<<<<<<< HEAD
     # train_model(parameters, epochs=5, distance=eu_distance, cnn=False)
     # test_model(parameters, 'val', 5)
     new_grid_search(parameters, 10, 2)
+=======
+    logging.info('Running training.')
+    train_model(parameters, euclidean, 3, cnn=False)
+    test_model(parameters, 'test', 3)
+    # grid_search(parameters, 10)
+    logging.info('Done!')
+>>>>>>> ab752ed8f8f0e6dd8afb23b75c015df575bac38c

@@ -84,9 +84,13 @@ class DataSet:
                 cnn.write("%s_cnn.npy\n" % link)
                 outs.write("0\n")
         if name == 'train':
+<<<<<<< HEAD
             train_weights = list()
             for x in self.train:
                 train_weights.append((self.total-x[-1])*1.0 / self.total)
+=======
+            for x in self.train:
+>>>>>>> ab752ed8f8f0e6dd8afb23b75c015df575bac38c
                 link, dish = x[0].replace(Path.DATA_FOLDER, ""), x[2]
                 if os.path.exists(Path.DATA_FOLDER + link + "_cnn.npy"):
                     segments = link.split("/")
@@ -187,9 +191,14 @@ class DataSet:
             train = 0.7 - (len(self.train)*1.0 / self.total)
             tmp_train, tmp_test = train_test_split(self.all_set, train_size=train)
             for x in tmp_train:
+<<<<<<< HEAD
                 self.train.append(x)
                 self.all_set.remove(x)
             tmp_train = self.train
+=======
+                self.all_set.remove(x)
+            tmp_train, tmp_test = train_test_split(self.all_set, train_size=train)
+>>>>>>> ab752ed8f8f0e6dd8afb23b75c015df575bac38c
             tmp_val, tmp_test = train_test_split(self.all_set, train_size=0.33)
         self.train, self.val, self.test = tmp_train, tmp_val, tmp_test
 
@@ -201,3 +210,4 @@ if __name__ == '__main__':
     s.execute_files('train')
     s.execute_files('val')
     s.execute_files('test')
+
