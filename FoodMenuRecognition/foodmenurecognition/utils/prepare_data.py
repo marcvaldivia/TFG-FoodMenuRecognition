@@ -1,5 +1,8 @@
 import glob,os.path
 from keras_wrapper.dataset import Dataset, saveDataset, loadDataset
+import random
+
+import numpy as np
 
 from foodmenurecognition.variables.paths import Path
 
@@ -85,7 +88,9 @@ def build_dataset(params):
         ds.setOutput(base_path + '/' + params['OUT_FILES']['train'],
                      'train',
                      type='real',
-                     id=params['OUTPUTS_IDS_DATASET'][0])
+                     id=params['OUTPUTS_IDS_DATASET'][0],
+                     sample_weights=np.load(Path.DATA_FOLDER + "/data/weights.npy").tolist()
+                                    + np.load(Path.DATA_FOLDER + "/data/weights.npy").tolist())
 
         ds.setOutput(base_path + '/' + params['OUT_FILES']['val'],
                      'val',
@@ -95,10 +100,7 @@ def build_dataset(params):
         ds.setOutput(base_path + '/' + params['OUT_FILES']['test'],
                      'test',
                      type='real',
-                     id=params['OUTPUTS_IDS_DATASET'][0])  # TODO: Pot ser el array directament
-
-        # TODO: Afegir array de pesos
-        # ds.sample_weights[params['OUTPUTS_IDS_DATASET'][0]] = None
+                     id=params['OUTPUTS_IDS_DATASET'][0])
 
         # We have finished loading the dataset, now we can store it for using it in the future
         saveDataset(ds, params['DATASET_STORE_PATH'])
@@ -185,18 +187,19 @@ def build_dataset_test(params, name):
     new_outs = open("%s/data/new_outs_%s.txt" % (Path.DATA_FOLDER, name), 'w')
     index = open("%s/data/index_%s.txt" % (Path.DATA_FOLDER, name), 'w')
     l_content = [x.strip() for x in links.readlines()]
+    random.shuffle(l_content)
     for link in l_content:
         segments = link.split("/")
         food_dir = segments[:-2]
         count = 0
-        # d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
-        # all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
-        d = Path.DATA_FOLDER + "/" + food_dir[-2]
-        files_depth2 = glob.glob('%s/*/*' % d)
-        all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
-        if len(all_foods) > 5:
+        d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
+        all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
+        # d = Path.DATA_FOLDER + "/" + food_dir[-2]
+        # files_depth2 = glob.glob('%s/*/*' % d)
+        # all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
+        if len(all_foods) > 1:
             cnn_path = link.replace(".npy", "_cnn.npy")
-            if os.path.exists(Path.DATA_FOLDER + cnn_path):
+            if os.path.exists(Path.DATA_FOLDER + cnn_path) or True:
                 for food in all_foods:
                     count += 1
                     food_name = food.split("/")[-1]

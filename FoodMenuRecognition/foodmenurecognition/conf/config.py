@@ -58,7 +58,7 @@ def load_parameters():
     DATA_AUGMENTATION = False  # Apply data augmentation on input data (noise on features)
     DATA_AUGMENTATION_TYPE = ['random_selection']  # 'random_selection', 'noise'
     IMG_FEAT_SIZE = 211  # Size of the image features
-    CNN_SIZE = 4096
+    CNN_SIZE = 418
 
     # Output text parameters
     OUTPUT_VOCABULARY_SIZE = 0  # Size of the input vocabulary. Set to 0 for using all,
@@ -69,8 +69,8 @@ def load_parameters():
     MIN_OCCURRENCES_VOCAB = 0  # Minimum number of occurrences allowed for the words in the vocabulay.
 
     # Optimizer parameters (see model.compile() function)
-    # LOSS = 'binary_crossentropy'
-    LOSS = 'mean_squared_error'
+    LOSS = 'binary_crossentropy'
+    # LOSS = 'mean_squared_error'
 
     OPTIMIZER = 'Adadelta'  # Optimizer
     LR = 1.  # Learning rate. Recommended values - Adam 0.001 - Adadelta 1.0
@@ -134,11 +134,6 @@ def load_parameters():
 
     # Extra parameters for special trainings
     FORCE_RELOAD_VOCABULARY = False  # force building a new vocabulary from the training samples applicable if RELOAD > 1
-
-    # CALLBACKS
-    CLASSIFICATION_TYPE = 'single-label'
-    OUTPUTS_TYPES = 'categorical'
-    NUM_CLASSES = 2
 
     # ============================================
     parameters = locals().copy()

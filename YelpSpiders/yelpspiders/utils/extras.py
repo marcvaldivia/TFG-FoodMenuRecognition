@@ -51,8 +51,8 @@ class Info:
 
 
 if __name__ == '__main__':
-    # s = Cleaner(Path.DATA_FOLDER)
-    # s.remove_empty_folders(Path.DATA_FOLDER)
+    s = Cleaner(Path.DATA_FOLDER)
+    s.remove_empty_folders(Path.DATA_FOLDER)
     info = Info(Path.DATA_FOLDER)
     print("Number of images: %s" % info.get_images())
     print("Number of restaurants: %s" % info.get_restaurants())

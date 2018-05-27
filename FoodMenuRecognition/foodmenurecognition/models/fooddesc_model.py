@@ -115,11 +115,27 @@ class FoodDesc_Model(Model_Wrapper):
 
     def Food_Img_Embedding(self, params):
 
-        image = Input(name=self.ids_inputs[0], shape=tuple([params['IMG_FEAT_SIZE']]))
-        emb_image = Dense(params['IMAGE_TEXT_MAPPING'])(image)
+        # l1 = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')
+        # l2 = Dropout(0.1)
+        # l3 = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')
+        # l4 = Dropout(0.1)
+        # l5 = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')
 
-        cnn = Input(name=self.ids_inputs[2], shape=tuple([params['CNN_SIZE']]))
-        emb_cnn = Dense(params['IMAGE_TEXT_MAPPING'])(cnn)
+        image_i = Input(name=self.ids_inputs[0], shape=tuple([params['IMG_FEAT_SIZE']]))
+        image = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')(image_i)
+        # image = l1(image)
+        # image = l2(image)
+        # image = l3(image)
+        # image = l4(image)
+        # image = l5(image)
+
+        cnn_i = Input(name=self.ids_inputs[2], shape=tuple([params['CNN_SIZE']]))
+        cnn = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')(cnn_i)
+        # cnn = l1(cnn)
+        # cnn = l2(cnn)
+        # cnn = l3(cnn)
+        # cnn = l4(cnn)
+        # cnn = l5(cnn)
 
         food_word = Input(name=self.ids_inputs[1], batch_shape=tuple([None, None]), dtype='int32')
         shared_emb = Embedding(params['INPUT_VOCABULARY_SIZE'],
@@ -129,14 +145,19 @@ class FoodDesc_Model(Model_Wrapper):
                                trainable=self.trg_embedding_weights_trainable,
                                mask_zero=True)
         emb = shared_emb(food_word)
-
         emb_food = LSTM(params['IMAGE_TEXT_MAPPING'],
                         return_sequences=False,
                         name='encoder_LSTM')(emb)
+        # emb_food = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')(emb_food)
+        # emb_food = l1(emb_food)
+        # emb_food = l2(emb_food)
+        # emb_food = l3(emb_food)
+        # emb_food = l4(emb_food)
+        # emb_food = l5(emb_food)
 
-        added = Add()([emb_image, emb_cnn])
+        added = Add()([image, cnn])
 
         dist = Lambda(params['distance'], name=self.ids_outputs[0])([added, emb_food]) if params['cnn'] \
-            else Lambda(params['distance'], name=self.ids_outputs[0])([emb_image, emb_food])
+            else Lambda(params['distance'], name=self.ids_outputs[0])([image, emb_food])
 
-        self.model = Model(input=[image, cnn, food_word], output=dist)
+        self.model = Model(input=[image_i, cnn_i, food_word], output=dist)

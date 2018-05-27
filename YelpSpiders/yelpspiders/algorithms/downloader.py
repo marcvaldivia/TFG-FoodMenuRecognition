@@ -7,6 +7,7 @@ import os
 import urllib
 
 import requests
+from keras.engine.saving import load_model
 
 from keras.preprocessing import image
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
@@ -15,26 +16,29 @@ from keras.applications.vgg16 import VGG16
 from keras.applications.vgg16 import preprocess_input
 from keras.models import Model
 import numpy as np
+import random
 
 from yelpspiders.variables.paths import Path
 
 
 class Downloader:
 
-    def __init__(self, root_folder, overwrite=False):
+    def __init__(self, root_folder, overwrite=False, overwrite_cnn=False):
         self.root_folder = root_folder
         self.overwrite = overwrite
+        self.overwrite_cnn = overwrite_cnn
         self.model = self.create_cnn()
         logging.info("Starting downloader...")
 
     @staticmethod
     def create_cnn():
-        base_model = VGG16(weights='imagenet')
-        model = Model(input=base_model.input, output=base_model.get_layer('fc2').output)
+        #base_model = VGG16(weights='imagenet')
+        base_model = load_model('/home/marcvaldivia/Downloads/food_model/epoch_8.h5')
+        model = Model(input=base_model.input, output=base_model.get_layer('dense_1').output)
         return model
 
     def get_image_features(self, img_path):
-        img = image.load_img(img_path, target_size=(224, 224))
+        img = image.load_img(img_path, target_size=(299, 299))
         img_data = image.img_to_array(img)
         img_data = np.expand_dims(img_data, axis=0)
         img_data = preprocess_input(img_data)
@@ -46,6 +50,7 @@ class Downloader:
         # DataSet folders of the different restaurants
         folders = [o for o in os.listdir(self.root_folder)
                    if os.path.isdir("%s/%s" % (self.root_folder, o)) and o != "data"]
+        random.shuffle(folders)
         for f in folders:
             # Load JSON file with the restaurant information
             f = "%s/%s" % (self.root_folder, f)
@@ -110,7 +115,7 @@ class Downloader:
                     with open("%s.json" % path_to_write, "w") as json_file:
                         json_file.write(r.text)
             # Generates the CNN features
-            if not os.path.exists("%s_cnn.npy" % path_to_write):
+            if self.overwrite_cnn or not os.path.exists("%s_cnn.npy" % path_to_write):
                 print("Generating CNN for %s " % path_to_write)
                 img_features = self.get_image_features("%s.jpg" % path_to_write)
                 np.save("%s_cnn.npy" % path_to_write, img_features)
