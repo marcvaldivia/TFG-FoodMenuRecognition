@@ -39,6 +39,11 @@ def eu_distance(vests):
     return 1 / (1 + K.sqrt(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True)))
 
 
+def euclidean(vests):
+    y_true, y_pred = vests
+    return K.sqrt(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True))
+
+
 def train_model(params, distance, epochs, cnn=True):
     # Load data
     dataset = build_dataset(params)
@@ -87,7 +92,7 @@ def train_model(params, distance, epochs, cnn=True):
     training_params = {
         'normalize': False,
         'n_epochs': epochs,
-        'batch_size': 64,
+        'batch_size': 32,
         'n_parallel_loaders': 1,
         'metric_check': 'accuracy'
     }
@@ -127,9 +132,9 @@ def test_model(params, s, i):
     for i in i_content:
         total += 1
         r_loss.append(label_ranking_loss([o_content[prev_i:prev_i + i]],
-                                         [[x[0] for x in predictions[prev_i:prev_i + i].tolist()]]))
-        max_o = np.argmax(o_content[prev_i:prev_i + i])
-        sorted_i = np.argsort([-x[0] for x in predictions[prev_i:prev_i + i]])
+                                         [[-x[0] for x in predictions[prev_i:prev_i + i].tolist()]]))
+        max_o = np.argmin(o_content[prev_i:prev_i + i])
+        sorted_i = np.argsort([x[0] for x in predictions[prev_i:prev_i + i]])
         acc += (i - list(sorted_i).index(max_o)) * 1.0 / i
         if max_o in sorted_i[:1]:
             top1 += 1
@@ -194,7 +199,7 @@ def grid_search(params, epochs):
 if __name__ == "__main__":
     parameters = load_parameters()
     logging.info('Running training.')
-    # train_model(parameters, cosine_distance, 1)
-    # test_model(parameters, 'val', 1)
-    grid_search(parameters, 10)
+    train_model(parameters, euclidean, 3, cnn=False)
+    test_model(parameters, 'test', 3)
+    # grid_search(parameters, 10)
     logging.info('Done!')

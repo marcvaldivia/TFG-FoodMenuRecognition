@@ -116,10 +116,23 @@ class FoodDesc_Model(Model_Wrapper):
     def Food_Img_Embedding(self, params):
 
         image = Input(name=self.ids_inputs[0], shape=tuple([params['IMG_FEAT_SIZE']]))
+        cnn = Input(name=self.ids_inputs[2], shape=tuple([params['CNN_SIZE']]))
+
+        encoded = Dense(128, activation='relu')(image)
+        encoded = Dense(64, activation='relu')(encoded)
+        encoded = Dense(32, activation='relu')(encoded)
+
+        decoded = Dense(64, activation='relu')(encoded)
+        decoded = Dense(128, activation='relu')(decoded)
+        decoded = Dense(params['IMG_FEAT_SIZE'], activation='sigmoid')(decoded)
+
+        '''
         emb_image = Dense(params['IMAGE_TEXT_MAPPING'])(image)
+        emb_image_v2 = Dense(50)(emb_image)
 
         cnn = Input(name=self.ids_inputs[2], shape=tuple([params['CNN_SIZE']]))
         emb_cnn = Dense(params['IMAGE_TEXT_MAPPING'])(cnn)
+        emb_cnn_v2 = Dense(50)(emb_cnn)
 
         food_word = Input(name=self.ids_inputs[1], batch_shape=tuple([None, None]), dtype='int32')
         shared_emb = Embedding(params['INPUT_VOCABULARY_SIZE'],
@@ -133,10 +146,33 @@ class FoodDesc_Model(Model_Wrapper):
         emb_food = LSTM(params['IMAGE_TEXT_MAPPING'],
                         return_sequences=False,
                         name='encoder_LSTM')(emb)
+        emb_food_v2 = Dense(50)(emb_food)
 
-        added = Add()([emb_image, emb_cnn])
+        added = Add()([emb_image_v2, emb_cnn_v2])
 
-        dist = Lambda(params['distance'], name=self.ids_outputs[0])([added, emb_food]) if params['cnn'] \
-            else Lambda(params['distance'], name=self.ids_outputs[0])([emb_image, emb_food])
+        dist = Lambda(params['distance'], name=self.ids_outputs[0])([added, emb_food_v2]) if params['cnn'] \
+            else Lambda(params['distance'], name=self.ids_outputs[0])([emb_image_v2, emb_food_v2])
 
         self.model = Model(input=[image, cnn, food_word], output=dist)
+        '''
+
+        food_word = Input(name=self.ids_inputs[1], batch_shape=tuple([None, None]), dtype='int32')
+        shared_emb = Embedding(params['INPUT_VOCABULARY_SIZE'],
+                               params['TARGET_TEXT_EMBEDDING_SIZE'],
+                               name='target_word_embedding',
+                               weights=self.trg_embedding_weights,
+                               trainable=self.trg_embedding_weights_trainable,
+                               mask_zero=True)
+        emb = shared_emb(food_word)
+
+        emb_food = LSTM(params['IMAGE_TEXT_MAPPING'],
+                        return_sequences=False,
+                        name='encoder_LSTM')(emb)
+        emb_food_v2 = Dense(300, activation='relu')(emb_food)
+        emb_food_v3 = Dense(200, activation='relu')(emb_food_v2)
+        emb_food_v4 = Dense(300, activation='relu')(emb_food_v3)
+        emb_food_v5 = Dense(params['IMG_FEAT_SIZE'], activation='relu')(emb_food_v4)
+
+        dist = Lambda(params['distance'], name=self.ids_outputs[0])([image, emb_food_v5])
+
+        self.model = Model(input=[image, food_word], output=dist)
