@@ -1,4 +1,4 @@
-import glob,os.path
+import glob, os.path
 from keras_wrapper.dataset import Dataset, saveDataset, loadDataset
 import random
 
@@ -85,12 +85,18 @@ def build_dataset(params):
                     feat_len=params['CNN_SIZE'])
 
         # OUTPUT DATA
-        ds.setOutput(base_path + '/' + params['OUT_FILES']['train'],
-                     'train',
-                     type='real',
-                     id=params['OUTPUTS_IDS_DATASET'][0],
-                     sample_weights=np.load(Path.DATA_FOLDER + "/data/weights.npy").tolist()
-                                    + np.load(Path.DATA_FOLDER + "/data/weights.npy").tolist())
+        if "sample_weight" not in params or params['sample_weight']:
+            ds.setOutput(base_path + '/' + params['OUT_FILES']['train'],
+                         'train',
+                         type='real',
+                         id=params['OUTPUTS_IDS_DATASET'][0],
+                         sample_weights=np.load(Path.DATA_FOLDER + "/data/weights.npy").tolist()
+                                        + np.load(Path.DATA_FOLDER + "/data/weights.npy").tolist())
+        else:
+            ds.setOutput(base_path + '/' + params['OUT_FILES']['train'],
+                         'train',
+                         type='real',
+                         id=params['OUTPUTS_IDS_DATASET'][0])
 
         ds.setOutput(base_path + '/' + params['OUT_FILES']['val'],
                      'val',

@@ -12,6 +12,8 @@ from foodmenurecognition.models.fooddesc_model import FoodDesc_Model
 from foodmenurecognition.utils.prepare_data import build_dataset, build_dataset_test, _build_dataset_test
 from foodmenurecognition.variables.paths import Path
 
+import random
+
 logging.basicConfig(level=logging.DEBUG, format='[%(asctime)s] %(message)s', datefmt='%d/%m/%Y %H:%M:%S')
 logger = logging.getLogger(__name__)
 
@@ -39,7 +41,7 @@ def pearson_sim(x):
     mul_down = K.sqrt(K.sum(K.square(fsp), axis=-1, keepdims=True)) * K.sqrt(K.sum(K.square(fst), axis=-1,
                                                                                    keepdims=True))
     div = sum_up / mul_down
-    return K.abs(div)
+    return 1 - K.abs(div)
 
 
 def cosine_distance(vests):
@@ -54,17 +56,9 @@ def eu_distance(vests):
     return K.sqrt(K.maximum(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True), K.epsilon()))
 
 
-<<<<<<< HEAD
-def train_model(params, epochs, distance=eu_distance, loss="binary_crossentropy", cnn=True):
-=======
-def euclidean(vests):
-    y_true, y_pred = vests
-    return K.sqrt(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True))
-
-
-def train_model(params, distance, epochs, cnn=True):
->>>>>>> ab752ed8f8f0e6dd8afb23b75c015df575bac38c
+def train_model(params, epochs, distance=eu_distance, loss="binary_crossentropy", cnn=0, sample_weight=True):
     # Load data
+    params['sample_weight'] = sample_weight
     dataset = build_dataset(params)
     params['INPUT_VOCABULARY_SIZE'] = dataset.vocabulary_len[params['INPUTS_IDS_DATASET'][1]]
 
@@ -153,11 +147,7 @@ def test_model(params, s, i):
         total += 1
         r_loss.append(label_ranking_loss([o_content[prev_i:prev_i + i]],
                                          [[-x[0] for x in predictions[prev_i:prev_i + i].tolist()]]))
-<<<<<<< HEAD
         max_o = np.argmax(o_content[prev_i:prev_i + i])
-=======
-        max_o = np.argmin(o_content[prev_i:prev_i + i])
->>>>>>> ab752ed8f8f0e6dd8afb23b75c015df575bac38c
         sorted_i = np.argsort([x[0] for x in predictions[prev_i:prev_i + i]])
         acc += (i - list(sorted_i).index(max_o)) * 1.0 / i
         if max_o in sorted_i[:1]:
@@ -240,63 +230,71 @@ def create_ds(split_kind, ingredients):
 
 
 def add_to_df(df, level, best, r_loss, epoch, historical):
-    df.loc['level: %s' % level, 'best'] = best
-    df.loc['level: %s' % level, 'r_loss'] = r_loss
-    df.loc['level: %s' % level, 'epoch'] = epoch
-    df.loc['level: %s' % level, 'historical'] = str(historical)
+    df.loc["level: %s / type: %s best" % (level, best), 'best'] = best
+    df.loc["level: %s / type: %s best" % (level, best), 'r_loss'] = r_loss
+    df.loc["level: %s / type: %s best" % (level, best), 'epoch'] = epoch
+    df.loc["level: %s / type: %s best" % (level, best), 'historical'] = str(historical)
 
 
 def new_grid_search(params, epochs, split_kind):
     df = pd.DataFrame()
+    file_name = "Grid_Search_%s.csv" % split_kind
     best_measure, best_loss = (pearson_sim, 1.0, 1, list()), ('binary_crossentropy', 1.0, 1, list())
-    best_ing, best_cnn = (False, 1.0, 1, list()), (False, 1.0, 1, list())
+    best_ing, best_cnn, best_sample = (False, 1.0, 1, list()), (False, 1.0, 1, list()), (True, 1.0, 1, list())
     try:
         create_ds(split_kind, best_ing[0])
         for distance in [(pearson_sim, "pearson"), (eu_distance, "euclidean"),
                          (exponent_neg_manhattan_distance, "manhattan"), (cosine_distance, "cosine")]:
             train_model(params, epochs, distance=distance[0], loss=best_loss[0], cnn=best_cnn[0])
             best_epoch, best_r_loss, historical = eval_results(params, epochs)
+            add_to_df(df, 'measure', distance[0], best_r_loss, best_epoch, historical)
+            df.to_csv(file_name)
             if best_measure[1] > best_r_loss:
                 best_measure = (distance[0], best_r_loss, best_epoch, historical)
         add_to_df(df, 'measure', best_measure[0], best_measure[1], best_measure[2], best_measure[3])
-        df.to_csv("GridSearch.csv")
         for loss in ["binary_crossentropy", "mean_squared_error", contrastive_loss]:
             train_model(params, epochs, distance=best_measure[0], loss=loss, cnn=best_cnn[0])
             best_epoch, best_r_loss, historical = eval_results(params, epochs)
+            add_to_df(df, 'loss', loss, best_r_loss, best_epoch, historical)
+            df.to_csv(file_name)
             if best_loss[1] > best_r_loss:
                 best_loss = (loss, best_r_loss, best_epoch, historical)
         add_to_df(df, 'loss', best_loss[0], best_loss[1], best_loss[2], best_loss[3])
-        df.to_csv("GridSearch.csv")
-        for cnn in [True, False]:
+        for cnn in [0]: # [0, 1, 2]:
             train_model(params, epochs, distance=best_measure[0], loss=best_loss[0], cnn=cnn)
             best_epoch, best_r_loss, historical = eval_results(params, epochs)
+            add_to_df(df, 'cnn', cnn, best_r_loss, best_epoch, historical)
+            df.to_csv(file_name)
             if best_cnn[1] > best_r_loss:
-                best_cnn = (cnn, best_r_loss, best_epoch)
+                best_cnn = (cnn, best_r_loss, best_epoch, historical)
         add_to_df(df, 'cnn', best_cnn[0], best_cnn[1], best_cnn[2], best_cnn[3])
-        df.to_csv("GridSearch.csv")
+        for sample_weight in [True, False]:
+            train_model(params, epochs, distance=best_measure[0], loss=best_loss[0], cnn=best_cnn[0],
+                        sample_weight=sample_weight)
+            best_epoch, best_r_loss, historical = eval_results(params, epochs)
+            add_to_df(df, 'sample_weight', sample_weight, best_r_loss, best_epoch, historical)
+            df.to_csv(file_name)
+            if best_sample[1] > best_r_loss:
+                best_sample = (sample_weight, best_r_loss, best_epoch, historical)
+        add_to_df(df, 'sample_weight', best_sample[0], best_sample[1], best_sample[2], best_sample[3])
         for ing in [True, False]:
             params['IMG_FEAT_SIZE'] = 211 if not ing else 1310
             create_ds(split_kind=split_kind, ingredients=ing)
             train_model(params, epochs, distance=best_measure[0], loss=best_loss[0], cnn=best_cnn[0])
             best_epoch, best_r_loss, historical = eval_results(params, epochs)
+            add_to_df(df, 'ingredients', ing, best_r_loss, best_epoch, historical)
+            df.to_csv(file_name)
             if best_ing[1] > best_r_loss:
-                best_ing = (ing, best_r_loss, best_epoch)
+                best_ing = (ing, best_r_loss, best_epoch, historical)
         add_to_df(df, 'ingredients', best_ing[0], best_ing[1], best_ing[2], best_ing[3])
-        df.to_csv("GridSearch.csv")
+        df.to_csv(file_name)
     except Exception as ex:
         logging.error(ex)
 
 
 if __name__ == "__main__":
     parameters = load_parameters()
-<<<<<<< HEAD
-    # train_model(parameters, epochs=5, distance=eu_distance, cnn=False)
-    # test_model(parameters, 'val', 5)
-    new_grid_search(parameters, 10, 2)
-=======
-    logging.info('Running training.')
-    train_model(parameters, euclidean, 3, cnn=False)
-    test_model(parameters, 'test', 3)
-    # grid_search(parameters, 10)
-    logging.info('Done!')
->>>>>>> ab752ed8f8f0e6dd8afb23b75c015df575bac38c
+    train_model(parameters, epochs=15, distance=pearson_sim, cnn=0)
+    test_model(parameters, 'val', 15)
+    # for split in range(1, 3):
+    #     new_grid_search(parameters, 10, split)

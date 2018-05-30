@@ -15,7 +15,12 @@ from keras.applications.inception_resnet_v2 import InceptionResNetV2
 from keras.applications.vgg16 import VGG16
 from keras.applications.vgg16 import preprocess_input
 from keras.models import Model
+
+from keras_wrapper.cnn_model import loadModel
+from keras_wrapper.dataset import loadDataset
+
 import numpy as np
+from sklearn import preprocessing
 import random
 
 from yelpspiders.variables.paths import Path
@@ -32,19 +37,31 @@ class Downloader:
 
     @staticmethod
     def create_cnn():
-        #base_model = VGG16(weights='imagenet')
-        base_model = load_model('/home/marcvaldivia/Downloads/food_model/epoch_8.h5')
+        base_model = InceptionResNetV2(weights='imagenet')
+        # base_model = loadModel('/home/marcvaldivia/Downloads/food_model', 8)
         model = Model(input=base_model.input, output=base_model.get_layer('dense_1').output)
         return model
 
     def get_image_features(self, img_path):
-        img = image.load_img(img_path, target_size=(299, 299))
+        img = image.load_img(img_path, target_size=(244, 244))
         img_data = image.img_to_array(img)
         img_data = np.expand_dims(img_data, axis=0)
         img_data = preprocess_input(img_data)
 
-        vgg16_feature = self.model.predict(img_data)
-        return vgg16_feature
+        feature = self.model.predict(img_data)
+        return preprocessing.normalize(feature, norm='l2')
+        # Build dataset for preprocessing inputs
+        # dataset = loadDataset(dataset_filepath)
+        # dataset.path = test_images_path
+        #
+        # # Load data (images)
+        # dataset.replaceInput(images_list, 'test', 'raw-image', 'image')
+        # X = dataset.getX('test', 0, len(images_list), dataAugmentation=False)
+        #
+        # # Predict and obtain list of dictionaries with output labels and probabilities
+        # prediction = self.model.predict_and_decode(X)
+        #
+        # print prediction
 
     def execute(self):
         # DataSet folders of the different restaurants
@@ -139,7 +156,7 @@ class Downloader:
 
 
 if __name__ == '__main__':
-    s = Downloader(Path.DATA_FOLDER)
+    s = Downloader(Path.DATA_FOLDER, overwrite_cnn=True)
     s.remove_empty_folders(Path.DATA_FOLDER)
     s.execute()
     s.remove_empty_folders(Path.DATA_FOLDER)

@@ -149,7 +149,7 @@ class FoodDesc_Model(Model_Wrapper):
                         return_sequences=False,
                         name='encoder_LSTM')(emb)
 
-        # emb_food = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')(emb_food)
+        emb_food = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')(emb_food)
         # emb_food = l1(emb_food)
         # emb_food = l2(emb_food)
         # emb_food = l3(emb_food)
@@ -158,7 +158,8 @@ class FoodDesc_Model(Model_Wrapper):
 
         added = Add()([image, cnn])
 
-        dist = Lambda(params['distance'], name=self.ids_outputs[0])([added, emb_food]) if params['cnn'] \
-            else Lambda(params['distance'], name=self.ids_outputs[0])([image, emb_food])
+        dist = Lambda(params['distance'], name=self.ids_outputs[0])([added, emb_food]) if params['cnn'] == 1 \
+            else Lambda(params['distance'], name=self.ids_outputs[0])([image, emb_food]) if params['cnn'] == 0 \
+            else Lambda(params['distance'], name=self.ids_outputs[0])([cnn, emb_food])
 
         self.model = Model(input=[image_i, cnn_i, food_word], output=dist)
