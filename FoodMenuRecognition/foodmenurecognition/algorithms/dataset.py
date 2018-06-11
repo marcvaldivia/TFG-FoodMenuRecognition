@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import random
-
 import numpy as np
 from sklearn.model_selection import train_test_split
 
@@ -14,9 +13,8 @@ from foodmenurecognition.variables.paths import Path
 
 class DataSet:
 
-    def __init__(self, root_folder, split_kind=2, ingredients=False, min_els=5):
+    def __init__(self, root_folder, ingredients=False, min_els=5):
         self.root_folder = root_folder
-        self.split_kind = split_kind
         self.ingredients = ingredients
         self.min_els = min_els
         self.result_ingredients, self.idx_ingredients = dict(), -1
@@ -24,7 +22,7 @@ class DataSet:
         self.result_family, self.idx_family = dict(), -1
         self.restaurants = [o for o in os.listdir(self.root_folder)
                             if os.path.isdir("%s/%s" % (self.root_folder, o)) and o != 'data']
-        self.all_set, self.dishes, self.images = list(), set(), set()
+        self.all_set, self.dishes, self.images = list(), list(), list()
         self.train, self.val, self.test = list(), list(), list()
         self.generate_json()
         self.create_dictionaries()
@@ -66,8 +64,6 @@ class DataSet:
             except Exception as ex:
                 logging.error(ex)
                 logging.error(x)
-                # os.remove("%s.jpg" % x[0])
-                # os.remove("%s.json" % x[0])
 
     def execute_files(self, name):
         dishes = open("%s/data/dishes_%s.txt" % (self.root_folder, name), 'w')
@@ -82,30 +78,23 @@ class DataSet:
                 dishes.write("%s\n" % dish)
                 links.write("%s.npy\n" % link)
                 cnn.write("%s_cnn.npy\n" % link)
-                outs.write("0\n")
+                outs.write("1\n")
         if name == 'train':
             train_weights = list()
             for x in self.train:
                 train_weights.append((self.total-x[-1])*1.0 / self.total)
                 link, dish = x[0].replace(Path.DATA_FOLDER, ""), x[2]
                 if os.path.exists(Path.DATA_FOLDER + link + "_cnn.npy"):
-                    segments = link.split("/")
-                    food_dir = segments[:-2]
                     count = 0
-                    d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
-                    all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
-                    # d = Path.DATA_FOLDER + "/" + food_dir[-2]
-                    # files_depth2 = glob.glob('%s/*/*' % d)
-                    # all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
-                    for food in [random.choice(all_foods)]:
+                    for food in random.sample(list(my_dishes), 1):
                         if food != dish:
                             count += 1
                             food_name = food.split("/")[-1]
                             dishes.write("%s\n" % food_name)
                             links.write("%s.npy\n" % link)
                             cnn.write("%s_cnn.npy\n" % link)
-                            outs.write("1\n")
-            np.save(self.root_folder + "/data/weights.npy", np.array(train_weights))
+                            outs.write("0\n")
+            np.save(self.root_folder + "/data/weights.npy", np.array(train_weights + train_weights))
             dishes.close()
             links.close()
             cnn.close()
@@ -131,7 +120,7 @@ class DataSet:
     def dictionary_el(dictionary, idx, el):
         try:
             _ = dictionary[el]
-        except:
+        except Exception as _:
             idx += 1
             dictionary[el] = idx
         return idx
@@ -144,58 +133,40 @@ class DataSet:
                 dishes = [o for o in os.listdir("%s/%s/%s" % (self.root_folder, restaurant, menu))
                           if os.path.isdir("%s/%s/%s/%s" % (self.root_folder, restaurant, menu, o))]
                 for dish in dishes:
-                    self.dishes.add(dish)
-                    json_files = [j for j in os.listdir("%s/%s/%s/%s" % (self.root_folder, restaurant, menu, dish))
-                                  if j.endswith('.json')]
-                    for image in json_files:
-                        self.images.add(image.replace(".json", ""))
-                        try:
-                            image = "%s/%s/%s/%s/%s" % (self.root_folder, restaurant, menu, dish, image)
-                            json_object = json.load(open(image))
-                            self.all_set.append((image.replace(".json", ""), json_object, dish,
-                                                 len(dishes), len(json_files)))
-                        except Exception as ex:
-                            logging.error(ex)
-                            logging.error("Error loading JSON file %s" % image)
+                    if "_" not in dish:
+                        self.dishes.append(dish)
+                        json_files = [j for j in os.listdir("%s/%s/%s/%s" % (self.root_folder, restaurant, menu, dish))
+                                      if j.endswith('.json')]
+                        for image in json_files:
+                            self.images.append(image.replace(".json", ""))
+                            try:
+                                image = "%s/%s/%s/%s/%s" % (self.root_folder, restaurant, menu, dish, image)
+                                json_object = json.load(open(image))
+                                self.all_set.append((image.replace(".json", ""), json_object, dish,
+                                                     len(dishes), len(json_files)))
+                            except Exception as ex:
+                                logging.error(ex)
+                                logging.error("Error loading JSON file %s" % image)
 
     def execute_division(self):
         for img in self.all_set:
-            if img[-1] < self.min_els or img[-2] < self.min_els:
-                self.train.append(img)
+            if img[-1] < self.min_els:
                 self.all_set.remove(img)
-                if self.split_kind == 1:
+                if img[-3] in self.dishes:
                     self.dishes.remove(img[-3])
-        if self.split_kind == 0:
-            train = 0.7
-            tmp_train, tmp_test = train_test_split(self.restaurants, train_size=train)
-            for x in tmp_train:
-                self.restaurants.remove(x)
-            tmp_train = [x for x in self.all_set if x[0].split("/")[-4] in tmp_train]
-            tmp_val, tmp_test = train_test_split(self.restaurants, train_size=0.33)
-            tmp_val = [x for x in self.all_set if x[0].split("/")[-4] in tmp_val]
-            tmp_test = [x for x in self.all_set if x[0].split("/")[-4] in tmp_test]
-        elif self.split_kind == 1:
-            train = 0.7 - (len(self.dishes)*1.0 / self.total_dishes)
-            tmp_train, tmp_test = train_test_split(self.dishes, train_size=train)
-            for x in tmp_train:
-                self.dishes.remove(x)
-            tmp_train = [x for x in self.all_set if x[0].split("/")[-2] in tmp_train]
-            tmp_val, tmp_test = train_test_split(self.restaurants, train_size=0.33)
-            tmp_val = [x for x in self.all_set if x[0].split("/")[-2] in tmp_val]
-            tmp_test = [x for x in self.all_set if x[0].split("/")[-2] in tmp_test]
-        else:
-            train = 0.7 - (len(self.train)*1.0 / self.total)
-            tmp_train, tmp_test = train_test_split(self.all_set, train_size=train)
-            for x in tmp_train:
-                self.train.append(x)
-                self.all_set.remove(x)
-            tmp_train = self.train
-            tmp_val, tmp_test = train_test_split(self.all_set, train_size=0.33)
+        train = 0.8
+        tmp_train, tmp_test = train_test_split(self.dishes, train_size=train)
+        for x in tmp_train:
+            self.dishes.remove(x)
+        tmp_train = [x for x in self.all_set if x[0].split("/")[-2] in tmp_train]
+        tmp_val, tmp_test = train_test_split(self.dishes, train_size=0.40)
+        tmp_val = [x for x in self.all_set if x[0].split("/")[-2] in tmp_val]
+        tmp_test = [x for x in self.all_set if x[0].split("/")[-2] in tmp_test]
         self.train, self.val, self.test = tmp_train, tmp_val, tmp_test
 
 
 if __name__ == '__main__':
-    s = DataSet(Path.DATA_FOLDER, split_kind=0)
+    s = DataSet(Path.DATA_FOLDER)
     s.execute()
     s.execute_division()
     s.execute_files('train')

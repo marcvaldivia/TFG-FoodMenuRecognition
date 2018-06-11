@@ -1,9 +1,10 @@
-import glob, os.path
-from keras_wrapper.dataset import Dataset, saveDataset, loadDataset
+import os.path
 import random
 
 import numpy as np
+from keras_wrapper.dataset import Dataset, saveDataset, loadDataset
 
+from foodmenurecognition.conf.config import load_parameters
 from foodmenurecognition.variables.paths import Path
 
 
@@ -90,8 +91,7 @@ def build_dataset(params):
                          'train',
                          type='real',
                          id=params['OUTPUTS_IDS_DATASET'][0],
-                         sample_weights=np.load(Path.DATA_FOLDER + "/data/weights.npy").tolist()
-                                        + np.load(Path.DATA_FOLDER + "/data/weights.npy").tolist())
+                         sample_weights=np.load(Path.DATA_FOLDER + "/data/weights.npy"))
         else:
             ds.setOutput(base_path + '/' + params['OUT_FILES']['train'],
                          'train',
@@ -116,7 +116,7 @@ def build_dataset(params):
     return ds
 
 
-def _build_dataset_test(params):
+def build_dataset_val_test(params):
     base_path = params['DATA_ROOT_PATH']
     name = params['DATASET_NAME']
     ds = Dataset(name, base_path, silence=False)
@@ -177,14 +177,11 @@ def _build_dataset_test(params):
     ds.setOutput(base_path + '/data/new_outs_test.txt',
                  'test',
                  type='real',
-                 id=params['OUTPUTS_IDS_DATASET'][0])  # TODO: Pot ser el array directament
-
-    # TODO: Afegir array de pesos
-    # ds.sample_weights[params['OUTPUTS_IDS_DATASET'][0]] = None
+                 id=params['OUTPUTS_IDS_DATASET'][0])
     return ds
 
 
-def build_dataset_test(params, name):
+def build_dataset_test_old(params, name):
     base_path = params['DATA_ROOT_PATH']
     links = open(base_path + '/' + params['IMAGES_LIST_FILES'][name], 'r')
     new_dishes = open("%s/data/new_dishes_%s.txt" % (Path.DATA_FOLDER, name), 'w')
@@ -193,7 +190,6 @@ def build_dataset_test(params, name):
     new_outs = open("%s/data/new_outs_%s.txt" % (Path.DATA_FOLDER, name), 'w')
     index = open("%s/data/index_%s.txt" % (Path.DATA_FOLDER, name), 'w')
     l_content = [x.strip() for x in links.readlines()]
-    random.shuffle(l_content)
     for link in l_content:
         segments = link.split("/")
         food_dir = segments[:-2]
@@ -203,7 +199,7 @@ def build_dataset_test(params, name):
         # d = Path.DATA_FOLDER + "/" + food_dir[-2]
         # files_depth2 = glob.glob('%s/*/*' % d)
         # all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
-        if len(all_foods) > 1:
+        if len(all_foods) > 5:
             cnn_path = link.replace(".npy", "_cnn.npy")
             if os.path.exists(Path.DATA_FOLDER + cnn_path) or True:
                 for food in all_foods:
@@ -219,3 +215,42 @@ def build_dataset_test(params, name):
     new_cnn.close()
     new_outs.close()
     index.close()
+
+
+def build_dataset_test(params, name):
+    base_path = params['DATA_ROOT_PATH']
+    links = open(base_path + '/' + params['IMAGES_LIST_FILES'][name], 'r')
+    new_dishes = open("%s/data/new_dishes_%s.txt" % (Path.DATA_FOLDER, name), 'w')
+    new_links = open("%s/data/new_links_%s.txt" % (Path.DATA_FOLDER, name), 'w')
+    new_cnn = open("%s/data/new_cnn_%s.txt" % (Path.DATA_FOLDER, name), 'w')
+    new_outs = open("%s/data/new_outs_%s.txt" % (Path.DATA_FOLDER, name), 'w')
+    index = open("%s/data/index_%s.txt" % (Path.DATA_FOLDER, name), 'w')
+    l_content = [x.strip() for x in links.readlines()]
+    dishes = set()
+    for l in l_content:
+        dishes.add(l.split("/")[-2])
+    for link in l_content:
+        segments = link.split("/")
+        count = 0
+        all_foods = [link.split("/")[-2]] + [food for food in random.sample(dishes, random.randint(9, 19))
+                                             if food != segments[-2]]
+        cnn_path = link.replace(".npy", "_cnn.npy")
+        if os.path.exists(Path.DATA_FOLDER + cnn_path) or True:
+            for food in all_foods:
+                count += 1
+                new_dishes.write("%s\n" % food)
+                new_links.write("%s\n" % link)
+                new_cnn.write("%s\n" % cnn_path)
+                new_outs.write("%s\n" % ("0" if food != segments[-2] else "1"))
+            index.write("%s\n" % count)
+    new_dishes.close()
+    new_links.close()
+    new_cnn.close()
+    new_outs.close()
+    index.close()
+
+
+if __name__ == '__main__':
+    parameters = load_parameters()
+    build_dataset_test(parameters, 'val')
+    build_dataset_test(parameters, 'test')

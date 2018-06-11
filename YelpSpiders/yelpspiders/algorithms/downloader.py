@@ -4,24 +4,15 @@
 import json
 import logging
 import os
+import random
 import urllib
 
+import numpy as np
 import requests
-from keras.engine.saving import load_model
-
-from keras.preprocessing import image
 from keras.applications.inception_resnet_v2 import InceptionResNetV2
-
-from keras.applications.vgg16 import VGG16
 from keras.applications.vgg16 import preprocess_input
 from keras.models import Model
-
-from keras_wrapper.cnn_model import loadModel
-from keras_wrapper.dataset import loadDataset
-
-import numpy as np
-from sklearn import preprocessing
-import random
+from keras.preprocessing import image
 
 from yelpspiders.variables.paths import Path
 
@@ -38,8 +29,7 @@ class Downloader:
     @staticmethod
     def create_cnn():
         base_model = InceptionResNetV2(weights='imagenet')
-        # base_model = loadModel('/home/marcvaldivia/Downloads/food_model', 8)
-        model = Model(input=base_model.input, output=base_model.get_layer('dense_1').output)
+        model = Model(input=base_model.input, output=base_model.get_layer('avg_pool').output)
         return model
 
     def get_image_features(self, img_path):
@@ -47,21 +37,8 @@ class Downloader:
         img_data = image.img_to_array(img)
         img_data = np.expand_dims(img_data, axis=0)
         img_data = preprocess_input(img_data)
-
         feature = self.model.predict(img_data)
-        return preprocessing.normalize(feature, norm='l2')
-        # Build dataset for preprocessing inputs
-        # dataset = loadDataset(dataset_filepath)
-        # dataset.path = test_images_path
-        #
-        # # Load data (images)
-        # dataset.replaceInput(images_list, 'test', 'raw-image', 'image')
-        # X = dataset.getX('test', 0, len(images_list), dataAugmentation=False)
-        #
-        # # Predict and obtain list of dictionaries with output labels and probabilities
-        # prediction = self.model.predict_and_decode(X)
-        #
-        # print prediction
+        return feature
 
     def execute(self):
         # DataSet folders of the different restaurants

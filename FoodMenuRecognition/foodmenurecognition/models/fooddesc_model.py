@@ -8,12 +8,12 @@ from keras_wrapper.cnn_model import Model_Wrapper
 from foodmenurecognition.utils.text_uri import standardized_uri
 
 
-class FoodDesc_Model(Model_Wrapper):
+class FoodDescModel(Model_Wrapper):
 
-    def resumeTrainNet(self, ds, params, out_name=None):
+    def resume_train_net(self, ds, params, out_name=None):
         pass
 
-    def __init__(self, params, type='Food_Img_Embedding', verbose=1, structure_path=None, weights_path=None,
+    def __init__(self, params, type='food_img_embedding', verbose=1, structure_path=None, weights_path=None,
                  model_name=None, vocabularies=None, store_path=None, set_optimizer=True, clear_dirs=True):
         super(self.__class__, self).__init__(type=type, model_name=model_name,
                                              silence=verbose == 0, models_path=store_path, inheritance=True)
@@ -30,10 +30,9 @@ class FoodDesc_Model(Model_Wrapper):
         self.setName(model_name, models_path=store_path, clear_dirs=clear_dirs)
 
         # Prepare target word embedding
-        # if params['TRG_PRETRAINED_VECTORS'] is not None:
-        if True:
+        if params['DATA_WORD2VEC'] is not None:
             if self.verbose > 0:
-                logging.info("<<< Loading pretrained word vectors from: " + params['TRG_PRETRAINED_VECTORS'] + " >>>")
+                logging.info("<<< Loading pretrained word vectors from: " + params['DATA_WORD2VEC'] + " >>>")
             self.trg_word_vectors = None  # np.load(os.path.join(params['TRG_PRETRAINED_VECTORS'])).item()
             data = pd.read_hdf(params['DATA_WORD2VEC'])
             self.trg_embedding_weights = np.random.rand(params['INPUT_VOCABULARY_SIZE'],
@@ -42,10 +41,14 @@ class FoodDesc_Model(Model_Wrapper):
                 try:
                     self.trg_embedding_weights[index, :] = data.loc[standardized_uri("en", word)] \
                         .values.reshape(1, 300)
-                except:
-                    pass
+                except Exception as _:
+                    try:
+                        self.trg_embedding_weights[index, :] = data.loc[standardized_uri("es", word)] \
+                            .values.reshape(1, 300)
+                    except Exception as _:
+                        pass
             self.trg_embedding_weights = [self.trg_embedding_weights]
-            self.trg_embedding_weights_trainable = params['TRG_PRETRAINED_VECTORS_TRAINABLE']
+            self.trg_embedding_weights_trainable = True
             del self.trg_word_vectors
             del data
         else:
@@ -82,7 +85,7 @@ class FoodDesc_Model(Model_Wrapper):
         if set_optimizer:
             self.setOptimizer()
 
-    def setOptimizer(self, **kwargs):
+    def setOptimizer(self):
         super(self.__class__, self).setOptimizer(lr=self.params['LR'],
                                                  clipnorm=self.params['CLIP_C'],
                                                  loss=self.params['LOSS'],
@@ -113,7 +116,7 @@ class FoodDesc_Model(Model_Wrapper):
     #       DEFINED MODELS
     # ------------------------------------------------------- #
 
-    def Food_Img_Embedding(self, params):
+    def food_img_embedding(self, params):
 
         # l1 = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')
         # l2 = Dropout(0.1)
@@ -122,7 +125,7 @@ class FoodDesc_Model(Model_Wrapper):
         # l5 = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')
 
         image_i = Input(name=self.ids_inputs[0], shape=tuple([params['IMG_FEAT_SIZE']]))
-        image = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')(image_i)
+        image = Dense(params['IMAGE_TEXT_MAPPING'])(image_i)
         # image = l1(image)
         # image = l2(image)
         # image = l3(image)
@@ -148,8 +151,7 @@ class FoodDesc_Model(Model_Wrapper):
         emb_food = LSTM(params['IMAGE_TEXT_MAPPING'],
                         return_sequences=False,
                         name='encoder_LSTM')(emb)
-
-        emb_food = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')(emb_food)
+        # emb_food = Dense(params['IMAGE_TEXT_MAPPING'])(emb_food)
         # emb_food = l1(emb_food)
         # emb_food = l2(emb_food)
         # emb_food = l3(emb_food)

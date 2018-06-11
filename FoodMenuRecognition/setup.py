@@ -6,4 +6,4 @@ setup(name='foodmenurecognition',
       url='https://wwww.marcvaldivia.com',
       author='Marc Valdivia',
       packages=find_packages(),
-      zip_safe=False)
+      zip_safe=False, install_requires=['pandas', 'scikit-learn', 'numpy'])
