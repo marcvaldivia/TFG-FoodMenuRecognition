@@ -228,21 +228,20 @@ def build_dataset_test(params, name):
     l_content = [x.strip() for x in links.readlines()]
     dishes = set()
     for l in l_content:
-        dishes.add(l.split("/")[-2])
+        dishes.add(l.split("/")[-2].strip())
     for link in l_content:
         segments = link.split("/")
-        count = 0
-        all_foods = [link.split("/")[-2]] + [food for food in random.sample(dishes, random.randint(9, 19))
-                                             if food != segments[-2]]
+        all_foods = [segments[-2].strip()] + [food for food in
+                                              np.random.choice(list(dishes), size=random.randint(9, 19), replace=False)
+                                             if food.strip() != segments[-2].strip()]
         cnn_path = link.replace(".npy", "_cnn.npy")
-        if os.path.exists(Path.DATA_FOLDER + cnn_path) or True:
+        if os.path.exists(Path.DATA_FOLDER + cnn_path):
             for food in all_foods:
-                count += 1
                 new_dishes.write("%s\n" % food)
                 new_links.write("%s\n" % link)
                 new_cnn.write("%s\n" % cnn_path)
-                new_outs.write("%s\n" % ("0" if food != segments[-2] else "1"))
-            index.write("%s\n" % count)
+                new_outs.write("%s\n" % (0 if food != segments[-2] else 1))
+            index.write("%s\n" % len(all_foods))
     new_dishes.close()
     new_links.close()
     new_cnn.close()

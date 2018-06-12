@@ -2,6 +2,7 @@ import pandas as pd
 from keras.layers import *
 from sklearn.metrics import label_ranking_loss
 import logging
+import pickle
 
 from keras_wrapper.cnn_model import loadModel
 
@@ -107,7 +108,7 @@ def train_model(params, epochs, distance=euclidan_similarity, loss="binary_cross
 
 
 def test_model(params, s, i):
-    build_dataset(params)
+    # build_dataset(params)
     food_model = loadModel(params['STORE_PATH'], i)
     food_model.setOptimizer()
 
@@ -121,6 +122,9 @@ def test_model(params, s, i):
         'verbose': True
     }
     predictions = food_model.predictNet(dataset, params_prediction)[s]
+
+    with open("%s/data/predictions_%s.txt" % (Path.DATA_FOLDER, s), "wb") as fp:
+        pickle.dump(predictions, fp)
 
     total, acc, r_loss = 0, 0, list()
     index = open("%s/data/index_%s.txt" % (Path.DATA_FOLDER, s), 'r')
@@ -143,7 +147,7 @@ def test_model(params, s, i):
 
 
 def get_results(params, epochs, distance, loss, cnn, sample_weight):
-    num_it = 4
+    num_it = 3
     key = "%s-%s-%s-%s" % (distance, loss, cnn, sample_weight)
     if key in cache_dict.keys():
         return cache_dict[key]
@@ -192,10 +196,10 @@ def new_grid_search(params, epochs, split_kind):
     df = pd.DataFrame()
     file_name = "Grid_Search_%s.csv" % split_kind
     best_measure, best_loss = (pearson_similarity, 1.0, 1, list()), ('binary_crossentropy', 1.0, 1, list())
-    best_ing, best_cnn, best_sample = (False, 1.0, 1, list()), (False, 1.0, 1, list()), (False, 1.0, 1, list())
+    best_ing, best_cnn, best_sample = (False, 1.0, 1, list()), (0, 1.0, 1, list()), (False, 1.0, 1, list())
     try:
         for distance in [(pearson_similarity, "pearson"), (euclidan_similarity, "euclidean"),
-                         (exponent_neg_manhattan_distance, "manhattan"), (cosine_similarity, "cosine")]:
+                         (exponent_neg_manhattan_distance, "manhattan")]:
 
             best_epoch, best_r_loss, historical = \
                 get_results(params, epochs, distance=distance[0], loss=best_loss[0],
@@ -239,7 +243,8 @@ def new_grid_search(params, epochs, split_kind):
 
 if __name__ == "__main__":
     parameters = load_parameters()
-    # train_model(parameters, epochs=3, distance=euclidan_similarity, cnn=2, sample_weight=False)
+    #train_model(parameters, epochs=1, distance=exponent_neg_manhattan_distance, cnn=0, loss=contrastive_loss,
+    #           sample_weight=False)
     # print(eval_results(parameters, 3))
-    # test_model(parameters, 'test', 3)
-    new_grid_search(parameters, 12, 5)
+    test_model(parameters, 'val', 1)
+    # new_grid_search(parameters, 5, 7)

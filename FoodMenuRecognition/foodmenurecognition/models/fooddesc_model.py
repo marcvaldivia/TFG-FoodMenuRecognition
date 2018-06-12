@@ -133,7 +133,7 @@ class FoodDescModel(Model_Wrapper):
         # image = l5(image)
 
         cnn_i = Input(name=self.ids_inputs[2], shape=tuple([params['CNN_SIZE']]))
-        cnn = Dense(params['IMAGE_TEXT_MAPPING'], activation='relu')(cnn_i)
+        cnn = Dense(params['IMAGE_TEXT_MAPPING'], activation="sigmoid")(cnn_i)
         # cnn = l1(cnn)
         # cnn = l2(cnn)
         # cnn = l3(cnn)
