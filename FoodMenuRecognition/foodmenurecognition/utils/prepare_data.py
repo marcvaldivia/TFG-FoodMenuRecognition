@@ -181,42 +181,6 @@ def build_dataset_val_test(params):
     return ds
 
 
-def build_dataset_test_old(params, name):
-    base_path = params['DATA_ROOT_PATH']
-    links = open(base_path + '/' + params['IMAGES_LIST_FILES'][name], 'r')
-    new_dishes = open("%s/data/new_dishes_%s.txt" % (Path.DATA_FOLDER, name), 'w')
-    new_links = open("%s/data/new_links_%s.txt" % (Path.DATA_FOLDER, name), 'w')
-    new_cnn = open("%s/data/new_cnn_%s.txt" % (Path.DATA_FOLDER, name), 'w')
-    new_outs = open("%s/data/new_outs_%s.txt" % (Path.DATA_FOLDER, name), 'w')
-    index = open("%s/data/index_%s.txt" % (Path.DATA_FOLDER, name), 'w')
-    l_content = [x.strip() for x in links.readlines()]
-    for link in l_content:
-        segments = link.split("/")
-        food_dir = segments[:-2]
-        count = 0
-        d = Path.DATA_FOLDER + "/" + food_dir[-2] + "/" + food_dir[-1]
-        all_foods = [os.path.join(d, o) for o in os.listdir(d) if os.path.isdir(os.path.join(d, o))]
-        # d = Path.DATA_FOLDER + "/" + food_dir[-2]
-        # files_depth2 = glob.glob('%s/*/*' % d)
-        # all_foods = filter(lambda f: os.path.isdir(f), files_depth2)
-        if len(all_foods) > 5:
-            cnn_path = link.replace(".npy", "_cnn.npy")
-            if os.path.exists(Path.DATA_FOLDER + cnn_path) or True:
-                for food in all_foods:
-                    count += 1
-                    food_name = food.split("/")[-1]
-                    new_dishes.write("%s\n" % food_name)
-                    new_links.write("%s\n" % link)
-                    new_cnn.write("%s\n" % cnn_path)
-                    new_outs.write("%s\n" % ("0" if food_name != segments[-2] else "1"))
-                index.write("%s\n" % count)
-    new_dishes.close()
-    new_links.close()
-    new_cnn.close()
-    new_outs.close()
-    index.close()
-
-
 def build_dataset_test(params, name):
     base_path = params['DATA_ROOT_PATH']
     links = open(base_path + '/' + params['IMAGES_LIST_FILES'][name], 'r')
@@ -230,12 +194,13 @@ def build_dataset_test(params, name):
     for l in l_content:
         dishes.add(l.split("/")[-2].strip())
     for link in l_content:
-        segments = link.split("/")
-        all_foods = [segments[-2].strip()] + [food for food in
-                                              np.random.choice(list(dishes), size=random.randint(9, 19), replace=False)
-                                             if food.strip() != segments[-2].strip()]
         cnn_path = link.replace(".npy", "_cnn.npy")
         if os.path.exists(Path.DATA_FOLDER + cnn_path):
+            segments = link.split("/")
+            all_foods = [segments[-2].strip()] + [food for food in
+                                                  np.random.choice(list(dishes), size=random.randint(9, 19),
+                                                                   replace=False)
+                                                  if food.strip() != segments[-2].strip()]
             for food in all_foods:
                 new_dishes.write("%s\n" % food)
                 new_links.write("%s\n" % link)

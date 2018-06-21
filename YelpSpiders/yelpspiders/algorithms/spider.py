@@ -85,7 +85,8 @@ class Spider:
         other_menus = menus[1:] if len(menus) > 1 else list()
         try:
             # Main menu (current url)
-            menus_list.append({'menu' if len(menus) < 2 else menus[0].getText().strip().lower(): self.get_menu_information(soup)})
+            menus_list.append({'menu' if len(menus) < 2 else menus[0].getText().strip().lower():
+                               self.get_menu_information(soup)})
         except Exception as e:
             logging.error("%s at %s" % (e.message, str(menus[0])))
         # Additional menus
