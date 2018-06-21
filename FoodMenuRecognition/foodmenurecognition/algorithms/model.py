@@ -101,7 +101,6 @@ def train_model(params, epochs, distance=euclidean_similarity, loss="binary_cros
 
 
 def test_model(params, s, i):
-    # build_dataset(params)
     food_model = loadModel(params['STORE_PATH'], i)
     food_model.setOptimizer()
 
@@ -141,7 +140,7 @@ def test_model(params, s, i):
 
 def get_results(params, epochs, distance, loss, cnn, sample_weight):
     num_it = 4
-    key = "%s-%s-%s-%s" % (str(distance)[:20], str(loss)[:20], cnn, sample_weight)
+    key = "%s-%s-%s-%s" % (distance, loss, cnn, sample_weight)
     if key in cache_dict.keys():
         return cache_dict[key]
     sum_values = [[list(), list(), list(), list()] for _ in range(epochs)]
