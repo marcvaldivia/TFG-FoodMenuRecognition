@@ -12,9 +12,6 @@ from foodmenurecognition.utils.prepare_data import build_dataset, build_dataset_
 from foodmenurecognition.variables.paths import Path
 
 
-cache_dict = dict()
-
-
 def contrastive_loss(y_true, y_pred):
     '''
     Contrastive loss from Hadsell-et-al.'06
@@ -46,7 +43,7 @@ def euclidean_similarity(vests):
     return 1 / (1 + K.sqrt(K.maximum(K.sum(K.square(y_true - y_pred), axis=-1, keepdims=True), K.epsilon())))
 
 
-def train_model(params, epochs, distance=euclidean_similarity, loss="binary_crossentropy", cnn=0, sample_weight=True):
+def train_model(params, epochs, distance=euclidean_similarity, loss="binary_crossentropy", cnn=1, sample_weight=False):
 
     # Load data
     params['sample_weight'] = sample_weight
@@ -138,34 +135,6 @@ def test_model(params, s, i):
     return (acc / total), np.mean(r_loss)
 
 
-def get_results(params, epochs, distance, loss, cnn, sample_weight):
-    num_it = 4
-    key = "%s-%s-%s-%s" % (distance, loss, cnn, sample_weight)
-    if key in cache_dict.keys():
-        return cache_dict[key]
-    sum_values = [[list(), list(), list(), list()] for _ in range(epochs)]
-    for _ in range(num_it):
-        train_model(params, epochs, distance=distance, loss=loss, cnn=cnn,
-                    sample_weight=sample_weight)
-        for epoch in range(1, epochs + 1):
-            acc, r_loss = test_model(params, 'val', epoch)
-            acc_test, r_loss_test = test_model(params, 'test', epoch)
-            sum_values[epoch - 1][0].append(acc)
-            sum_values[epoch - 1][1].append(r_loss)
-            sum_values[epoch - 1][2].append(acc_test)
-            sum_values[epoch - 1][3].append(r_loss_test)
-    best_epoch, best_r_loss, best_r_loss_test = 0, 1.0, 1.0
-    historical = list()
-    for epoch in range(epochs):
-        acc, r_loss = np.median(sum_values[epoch][0]), np.median(sum_values[epoch][1])
-        acc_test, r_loss_test = np.median(sum_values[epoch][2]), np.median(sum_values[epoch][3])
-        historical.append((acc, r_loss, acc_test, r_loss_test))
-        if r_loss < best_r_loss:
-            best_epoch, best_r_loss, best_r_loss_test = epoch, r_loss, r_loss_test
-    cache_dict[key] = (best_epoch, best_r_loss, best_r_loss_test, historical)
-    return cache_dict[key]
-
-
 def eval_results(params, epochs):
     best_epoch, best_r_loss = 0, 1.0
     historical = list()
@@ -177,56 +146,7 @@ def eval_results(params, epochs):
     return best_epoch, best_r_loss, historical
 
 
-def add_to_df(df, level, best, r_loss, epoch, historical):
-    df.loc["level: %s / type: %s best" % (level, best), 'best'] = best
-    df.loc["level: %s / type: %s best" % (level, best), 'r_loss'] = r_loss
-    df.loc["level: %s / type: %s best" % (level, best), 'epoch'] = epoch
-    df.loc["level: %s / type: %s best" % (level, best), 'historical'] = str(historical)
-
-
-def new_grid_search(params, epochs, split_kind):
-    df = pd.DataFrame()
-    file_name = "Grid_Search_%s.csv" % split_kind
-    best_measure, best_loss = (euclidean_similarity, 1.0, 1, list()), ('binary_crossentropy', 1.0, 1, list())
-    best_cnn, best_sample = (0, 1.0, 1, list()), (False, 1.0, 1, list())
-    try:
-        for distance in [(pearson_similarity, "pearson"), (euclidean_similarity, "euclidean")]:
-            best_epoch, best_r_loss, best_r_loss_test, historical = \
-                get_results(params, epochs, distance=distance[0], loss=best_loss[0],
-                            cnn=best_cnn[0], sample_weight=best_sample[0])
-            add_to_df(df, 'measure', distance[0], best_r_loss_test, best_epoch, historical)
-            df.to_csv(file_name)
-            if best_measure[1] > best_r_loss_test:
-                best_measure = (distance[0], best_r_loss_test, best_epoch, historical)
-        for loss in ["binary_crossentropy", contrastive_loss]:
-            best_epoch, best_r_loss, best_r_loss_test, historical = \
-                get_results(params, epochs, distance=best_measure[0], loss=loss,
-                            cnn=best_cnn[0], sample_weight=best_sample[0])
-            add_to_df(df, 'loss', loss, best_r_loss_test, best_epoch, historical)
-            df.to_csv(file_name)
-            if best_loss[1] > best_r_loss_test:
-                best_loss = (loss, best_r_loss_test, best_epoch, historical)
-        for cnn in [0, 1, 2]:
-            best_epoch, best_r_loss, best_r_loss_test, historical = \
-                get_results(params, epochs, distance=best_measure[0], loss=best_loss[0],
-                            cnn=cnn, sample_weight=best_sample[0])
-            add_to_df(df, 'cnn', cnn, best_r_loss_test, best_epoch, historical)
-            df.to_csv(file_name)
-            if best_cnn[1] > best_r_loss_test:
-                best_cnn = (cnn, best_r_loss_test, best_epoch, historical)
-        for sample_weight in [True, False]:
-            best_epoch, best_r_loss, best_r_loss_test, historical = \
-                get_results(params, epochs, distance=best_measure[0], loss=best_loss[0],
-                            cnn=best_cnn[0], sample_weight=sample_weight)
-            add_to_df(df, 'sample_weight', sample_weight, best_r_loss_test, best_epoch, historical)
-            df.to_csv(file_name)
-            if best_sample[1] > best_r_loss_test:
-                best_sample = (sample_weight, best_r_loss_test, best_epoch, historical)
-        df.to_csv(file_name)
-    except Exception as ex:
-        logging.error(ex)
-
-
 if __name__ == "__main__":
     parameters = load_parameters()
-    get_results(parameters, 5, euclidean_similarity, "binary_crossentropy", 1, False)
+    train_model(parameters, 1)
+    test_model(parameters, 'test', 1)
